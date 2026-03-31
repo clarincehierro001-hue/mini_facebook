@@ -11,13 +11,19 @@
     }
 
     .post-form-card,
-    .post-card {
-        background: #fff;
-        border-radius: 12px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-        padding: 20px;
-        margin-bottom: 20px;
-    }
+	.post-card {
+		background: #fff;
+		border-radius: 12px;
+		box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+		padding: 20px;
+		margin-bottom: 20px;
+	}
+
+	.post-card.new-post {
+		background: #ffe5e5;
+		border: 1px solid #ff4d4d;
+		transition: 0.3s ease;
+	}
 
     .feed-title {
         font-size: 28px;
@@ -219,6 +225,9 @@
 
 <script>
     window.isSubmittingPost = false;
+	
+	let lastPostIds = new Set();
+	let firstLoad = true;
 
     function escapeHtml(text) {
         const div = document.createElement("div");
@@ -279,21 +288,30 @@
     }
 
     function renderPosts(posts) {
-        const container = document.getElementById("posts-container");
+    const container = document.getElementById("posts-container");
 
-        if (!container) return;
+    if (!container) return;
 
-        if (!posts || posts.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    No posts yet. Be the first to post something.
-                </div>
-            `;
-            return;
-        }
+    if (!posts || posts.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                No posts yet. Be the first to post something.
+            </div>
+        `;
+        lastPostIds = new Set();
+        firstLoad = false;
+        return;
+    }
 
-        container.innerHTML = posts.map(post => `
-            <div class="post-card">
+    const newIds = new Set();
+
+    container.innerHTML = posts.map(post => {
+        newIds.add(post.id);
+
+        const isNew = !firstLoad && !lastPostIds.has(post.id);
+
+        return `
+            <div class="post-card ${isNew ? 'new-post' : ''}">
                 <div class="post-header">
                     <div class="post-author">@${escapeHtml(post.user)}</div>
                     <div class="post-id">Post #${post.id}</div>
@@ -333,27 +351,38 @@
                     </button>
                 </div>
             </div>
-        `).join("");
-    }
+        `;
+    }).join("");
 
-    async function loadMessages() {
-        if (window.isSubmittingPost) return;
+    lastPostIds = newIds;
+    firstLoad = false;
 
-        try {
-            const response = await fetch("/messages");
+    setTimeout(() => {
+        document.querySelectorAll(".post-card.new-post").forEach(el => {
+            el.classList.remove("new-post");
+        });
+    }, 2000);
+	}
 
-            if (!response.ok) {
-                return;
-            }
+async function loadMessages() {
+    if (window.isSubmittingPost) return;
 
-            const posts = await response.json();
-            renderPosts(posts);
-        } catch (error) {
-            console.error("Failed to load messages");
+    try {
+        const response = await fetch("/messages");
+
+        if (!response.ok) {
+            return;
         }
-    }
 
-    setInterval(loadMessages, 2000);
+        const posts = await response.json();
+        renderPosts(posts);
+    } catch (error) {
+        console.error("Failed to load messages");
+    }
+}
+
+loadMessages();
+setInterval(loadMessages, 2000);
 
     const ajaxPostForm = document.getElementById("post-form");
 
