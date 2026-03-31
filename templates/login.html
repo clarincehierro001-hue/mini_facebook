@@ -1,10 +1,155 @@
 {% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
 {% block content %}
-<h3>Login</h3>
-<form method="POST">
-    <input name="username" placeholder="Username" required>
-    <input name="password" type="password" placeholder="Password" required>
-    <button type="submit">Login</button>
-</form>
-<a href="/register">Register</a>
+
+<style>
+    .auth-container {
+        background: #fff;
+        padding: 40px;
+        border-radius: 12px;
+        max-width: 400px;
+        margin: auto;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+
+    .auth-title {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    .auth-subtitle {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 25px;
+    }
+
+    .form-group {
+        text-align: left;
+        margin-bottom: 15px;
+    }
+
+    .form-group label {
+        font-size: 14px;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="password"] {
+        width: 100%;
+        padding: 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        box-sizing: border-box;
+    }
+
+    .remember {
+        display: flex;
+        align-items: center;
+        justify-content: left;
+        margin-bottom: 15px;
+        font-size: 14px;
+    }
+
+    .remember input {
+        margin-right: 8px;
+    }
+
+    .btn {
+        width: 100%;
+        padding: 10px;
+        border: none;
+        border-radius: 6px;
+        background: #4facfe;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .btn:hover {
+        background: #3a8dde;
+    }
+
+    .auth-footer {
+        margin-top: 15px;
+        font-size: 14px;
+    }
+
+    .auth-footer a {
+        color: #4facfe;
+        text-decoration: none;
+    }
+
+    .auth-footer a:hover {
+        text-decoration: underline;
+    }
+
+    .error-message {
+        background: #ffe5e5;
+        color: #b30000;
+        border: 1px solid #ffb3b3;
+        padding: 10px 14px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        font-size: 14px;
+        text-align: left;
+    }
+</style>
+
+<div class="auth-container">
+    <div class="auth-title">Welcome Back</div>
+    <div class="auth-subtitle">Login to your account</div>
+
+    {% if error %}
+        <div class="error-message">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('login') }}">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input
+                id="username"
+                type="text"
+                name="username"
+                value="{{ request.form.get('username', '') }}"
+                required
+                autocomplete="username"
+                maxlength="30"
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input
+                id="password"
+                type="password"
+                name="password"
+                required
+                autocomplete="current-password"
+            >
+        </div>
+
+        <div class="remember">
+            <input
+                id="remember"
+                type="checkbox"
+                name="remember"
+                {% if request.form.get('remember') == 'on' %}checked{% endif %}
+            >
+            <label for="remember">Remember me</label>
+        </div>
+
+        <button type="submit" class="btn">Login</button>
+    </form>
+
+    <div class="auth-footer">
+        Don’t have an account?
+        <a href="{{ url_for('register') }}">Register</a>
+    </div>
+</div>
+
 {% endblock %}
