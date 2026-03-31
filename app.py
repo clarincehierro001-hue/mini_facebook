@@ -15,7 +15,8 @@ from flask_login import (
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import UniqueConstraint
 
-app = Flask(__name__)
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"))
 
 # ---------------- CONFIG ----------------
 def get_database_uri():
@@ -111,7 +112,7 @@ def load_posts_with_reactions():
         post_items.append({
             "id": post.id,
             "content": post.content,
-            "user": post.user,
+            "user": post.user.username,
             "reactions": post.reaction_summary()
         })
 
@@ -218,6 +219,12 @@ def feed():
     return render_template("feed.html", posts=load_posts_with_reactions())
 
 
+@app.route("/messages")
+@login_required
+def messages():
+    return jsonify(load_posts_with_reactions())
+
+
 @app.route("/react/<int:post_id>", methods=["POST"])
 @login_required
 def react(post_id):
@@ -283,4 +290,4 @@ with app.app_context():
 
 # ---------------- RUN ----------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    app.run(debug=True)
