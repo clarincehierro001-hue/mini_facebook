@@ -166,58 +166,66 @@
     </div>
 
     <div id="posts-container">
-    {% if posts %}
-        {% for post in posts %}
-            <div class="post-card">
-                <div class="post-header">
-                    <div class="post-author">@{{ post.user }}</div>
-                    <div class="post-id">Post #{{ post.id }}</div>
+        {% if posts %}
+            {% for post in posts %}
+                <div class="post-card">
+                    <div class="post-header">
+                        <div class="post-author">@{{ post.user }}</div>
+                        <div class="post-id">Post #{{ post.id }}</div>
+                    </div>
+
+                    <div class="post-content">{{ post.content }}</div>
+
+                    <div class="reactions">
+                        <button
+                            type="button"
+                            class="reaction-btn"
+                            data-post-id="{{ post.id }}"
+                            data-reaction="like"
+                            onclick="reactToPost({{ post.id }}, 'like')"
+                        >
+                            👍 Like (<span class="count-like">{{ post.reactions['like'] if post.reactions else 0 }}</span>)
+                        </button>
+
+                        <button
+                            type="button"
+                            class="reaction-btn"
+                            data-post-id="{{ post.id }}"
+                            data-reaction="love"
+                            onclick="reactToPost({{ post.id }}, 'love')"
+                        >
+                            ❤️ Love (<span class="count-love">{{ post.reactions['love'] if post.reactions else 0 }}</span>)
+                        </button>
+
+                        <button
+                            type="button"
+                            class="reaction-btn"
+                            data-post-id="{{ post.id }}"
+                            data-reaction="laugh"
+                            onclick="reactToPost({{ post.id }}, 'laugh')"
+                        >
+                            😂 Laugh (<span class="count-laugh">{{ post.reactions['laugh'] if post.reactions else 0 }}</span>)
+                        </button>
+                    </div>
                 </div>
-
-                <div class="post-content">{{ post.content }}</div>
-
-                <div class="reactions">
-                    <button
-                        type="button"
-                        class="reaction-btn"
-                        data-post-id="{{ post.id }}"
-                        data-reaction="like"
-                        onclick="reactToPost({{ post.id }}, 'like')"
-                    >
-                        👍 Like (<span class="count-like">{{ post.reactions['like'] if post.reactions else 0 }}</span>)
-                    </button>
-
-                    <button
-                        type="button"
-                        class="reaction-btn"
-                        data-post-id="{{ post.id }}"
-                        data-reaction="love"
-                        onclick="reactToPost({{ post.id }}, 'love')"
-                    >
-                        ❤️ Love (<span class="count-love">{{ post.reactions['love'] if post.reactions else 0 }}</span>)
-                    </button>
-
-                    <button
-                        type="button"
-                        class="reaction-btn"
-                        data-post-id="{{ post.id }}"
-                        data-reaction="laugh"
-                        onclick="reactToPost({{ post.id }}, 'laugh')"
-                    >
-                        😂 Laugh (<span class="count-laugh">{{ post.reactions['laugh'] if post.reactions else 0 }}</span>)
-                    </button>
-                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                No posts yet. Be the first to post something.
             </div>
-        {% endfor %}
-    {% else %}
-        <div class="empty-state">
-            No posts yet. Be the first to post something.
-        </div>
-    {% endif %}
+        {% endif %}
+    </div>
 </div>
-</div>  <!-- ✅ FIX: this closes .feed-wrapper -->
 
 <script>
+    window.isSubmittingPost = false;
+
+    function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text || "";
+        return div.innerHTML;
+    }
+
     function updateReactionButtons(postId, reactions, selectedReaction = null) {
         const buttons = document.querySelectorAll(`.reaction-btn[data-post-id="${postId}"]`);
 
@@ -225,7 +233,7 @@
             const reaction = button.dataset.reaction;
             const countSpan = button.querySelector(`.count-${reaction}`);
 
-            if (countSpan && reactions[reaction] !== undefined) {
+            if (countSpan && reactions && reactions[reaction] !== undefined) {
                 countSpan.textContent = reactions[reaction];
             }
 
@@ -240,9 +248,9 @@
     async function reactToPost(postId, reactionType) {
         try {
             const response = await fetch(`/react/${postId}`, {
-                method: 'POST',
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json'
+                    "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
                     reaction: reactionType
@@ -252,7 +260,7 @@
             const data = await response.json();
 
             if (!data.success) {
-                alert(data.error || 'Failed to react');
+                alert(data.error || "Failed to react");
                 return;
             }
 
@@ -266,13 +274,9 @@
                 updateReactionButtons(postId, data.reactions, selectedReaction);
             }
         } catch (error) {
-            alert('Something went wrong while reacting to the post.');
+            alert("Something went wrong while reacting to the post.");
         }
     }
-</script>
-
-<script>
-    window.isSubmittingPost = false;
 
     function renderPosts(posts) {
         const container = document.getElementById("posts-container");
@@ -291,22 +295,40 @@
         container.innerHTML = posts.map(post => `
             <div class="post-card">
                 <div class="post-header">
-                    <div class="post-author">@${post.user}</div>
+                    <div class="post-author">@${escapeHtml(post.user)}</div>
                     <div class="post-id">Post #${post.id}</div>
                 </div>
 
                 <div class="post-content">${escapeHtml(post.content)}</div>
 
                 <div class="reactions">
-                    <button type="button" class="reaction-btn" onclick="reactToPost(${post.id}, 'like')">
+                    <button
+                        type="button"
+                        class="reaction-btn"
+                        data-post-id="${post.id}"
+                        data-reaction="like"
+                        onclick="reactToPost(${post.id}, 'like')"
+                    >
                         👍 Like (<span class="count-like">${post.reactions?.like ?? 0}</span>)
                     </button>
 
-                    <button type="button" class="reaction-btn" onclick="reactToPost(${post.id}, 'love')">
+                    <button
+                        type="button"
+                        class="reaction-btn"
+                        data-post-id="${post.id}"
+                        data-reaction="love"
+                        onclick="reactToPost(${post.id}, 'love')"
+                    >
                         ❤️ Love (<span class="count-love">${post.reactions?.love ?? 0}</span>)
                     </button>
 
-                    <button type="button" class="reaction-btn" onclick="reactToPost(${post.id}, 'laugh')">
+                    <button
+                        type="button"
+                        class="reaction-btn"
+                        data-post-id="${post.id}"
+                        data-reaction="laugh"
+                        onclick="reactToPost(${post.id}, 'laugh')"
+                    >
                         😂 Laugh (<span class="count-laugh">${post.reactions?.laugh ?? 0}</span>)
                     </button>
                 </div>
@@ -314,28 +336,25 @@
         `).join("");
     }
 
-    function escapeHtml(text) {
-        const div = document.createElement("div");
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
     async function loadMessages() {
         if (window.isSubmittingPost) return;
 
         try {
             const response = await fetch("/messages");
+
+            if (!response.ok) {
+                return;
+            }
+
             const posts = await response.json();
             renderPosts(posts);
-        } catch (e) {
+        } catch (error) {
             console.error("Failed to load messages");
         }
     }
 
     setInterval(loadMessages, 2000);
-</script>
 
-<script>
     const ajaxPostForm = document.getElementById("post-form");
 
     if (ajaxPostForm) {
@@ -345,7 +364,13 @@
             window.isSubmittingPost = true;
 
             const textarea = ajaxPostForm.querySelector('textarea[name="content"]');
-            const content = textarea.value;
+            const content = textarea.value.trim();
+
+            if (!content) {
+                window.isSubmittingPost = false;
+                alert("Post cannot be empty");
+                return;
+            }
 
             fetch("{{ url_for('feed') }}", {
                 method: "POST",
@@ -358,6 +383,7 @@
                 if (!response.ok) {
                     throw new Error("Failed to post");
                 }
+
                 textarea.value = "";
                 window.isSubmittingPost = false;
                 location.reload();

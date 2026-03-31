@@ -25,6 +25,7 @@ def get_database_uri():
         db_url = db_url.replace("postgres://", "postgresql://", 1)
     return db_url
 
+
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key-change-this-in-production")
 app.config["SQLALCHEMY_DATABASE_URI"] = get_database_uri()
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -89,6 +90,8 @@ class Reaction(db.Model):
 
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey("post.id"), nullable=False)
+
+    user = db.relationship("User", backref="reactions")
 
     __table_args__ = (
         UniqueConstraint("user_id", "post_id", name="unique_user_post_reaction"),
@@ -229,7 +232,7 @@ def messages():
 @login_required
 def react(post_id):
     data = request.get_json(silent=True) or {}
-    reaction_type = data.get("reaction")
+    reaction_type = str(data.get("reaction", "")).strip().lower()
 
     if reaction_type not in REACTION_TYPES:
         return jsonify({"success": False, "error": "Invalid reaction"}), 400
@@ -290,4 +293,4 @@ with app.app_context():
 
 # ---------------- RUN ----------------
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=not is_production)
