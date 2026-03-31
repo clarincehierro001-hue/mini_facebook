@@ -5,143 +5,209 @@
 {% block content %}
 
 <style>
+    .auth-page {
+        min-height: 70vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
     .auth-container {
-        background: #fff;
-        padding: 40px;
-        border-radius: 12px;
-        max-width: 400px;
-        margin: auto;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        width: 100%;
+        max-width: 430px;
+        background: rgba(255, 255, 255, 0.96);
+        border: 1px solid #e5e7eb;
+        padding: 36px;
+        border-radius: 18px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.10);
         text-align: center;
     }
 
-    .auth-title {
-        font-size: 24px;
+    .auth-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        font-size: 12px;
         font-weight: bold;
-        margin-bottom: 10px;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+        color: #2563eb;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 999px;
+        margin-bottom: 16px;
+    }
+
+    .auth-title {
+        font-size: 30px;
+        font-weight: bold;
+        color: #111827;
+        margin-bottom: 8px;
     }
 
     .auth-subtitle {
         font-size: 14px;
-        color: #666;
-        margin-bottom: 25px;
+        color: #6b7280;
+        margin-bottom: 28px;
+        line-height: 1.5;
     }
 
     .form-group {
         text-align: left;
-        margin-bottom: 15px;
+        margin-bottom: 18px;
     }
 
     .form-group label {
         font-size: 14px;
+        font-weight: 600;
+        color: #374151;
         display: block;
-        margin-bottom: 5px;
+        margin-bottom: 8px;
     }
 
     .form-group input {
         width: 100%;
-        padding: 10px;
-        border-radius: 6px;
-        border: 1px solid #ccc;
+        padding: 12px 14px;
+        border-radius: 10px;
+        border: 1px solid #d1d5db;
         box-sizing: border-box;
+        font-size: 14px;
+        background: #ffffff;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.18);
+    }
+
+    .password-note {
+        text-align: left;
+        font-size: 12px;
+        line-height: 1.6;
+        color: #6b7280;
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-top: -4px;
+        margin-bottom: 18px;
     }
 
     .btn {
         width: 100%;
-        padding: 10px;
+        padding: 12px;
         border: none;
-        border-radius: 6px;
-        background: #4facfe;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #4facfe, #2563eb);
         color: white;
         font-weight: bold;
+        font-size: 15px;
         cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+        box-shadow: 0 10px 20px rgba(37, 99, 235, 0.25);
     }
 
     .btn:hover {
-        background: #3a8dde;
+        transform: translateY(-1px);
+        opacity: 0.97;
+    }
+
+    .btn:active {
+        transform: translateY(0);
     }
 
     .auth-footer {
-        margin-top: 15px;
+        margin-top: 20px;
         font-size: 14px;
+        color: #6b7280;
     }
 
     .auth-footer a {
-        color: #4facfe;
+        color: #2563eb;
         text-decoration: none;
+        font-weight: 600;
     }
 
     .auth-footer a:hover {
         text-decoration: underline;
     }
 
-    .password-note {
-        text-align: left;
-        font-size: 12px;
-        color: #777;
-        margin-top: -8px;
-        margin-bottom: 15px;
-    }
-
     .error-message {
-        background: #ffe5e5;
-        color: #b30000;
-        border: 1px solid #ffb3b3;
-        padding: 10px 14px;
-        border-radius: 8px;
-        margin-bottom: 15px;
+        background: #fef2f2;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-bottom: 18px;
         font-size: 14px;
         text-align: left;
     }
+
+    @media (max-width: 520px) {
+        .auth-container {
+            padding: 24px 18px;
+            border-radius: 14px;
+        }
+
+        .auth-title {
+            font-size: 26px;
+        }
+    }
 </style>
 
-<div class="auth-container">
-    <div class="auth-title">Create Account</div>
-    <div class="auth-subtitle">Register to start using your app</div>
+<div class="auth-page">
+    <div class="auth-container">
+        <div class="auth-badge">New Account</div>
+        <div class="auth-title">Create Account</div>
+        <div class="auth-subtitle">Register to start using your app and access your personal feed.</div>
 
-    {% if error %}
-        <div class="error-message">{{ error }}</div>
-    {% endif %}
+        {% if error %}
+            <div class="error-message">{{ error }}</div>
+        {% endif %}
 
-    <form method="POST" action="{{ url_for('register') }}">
-        <div class="form-group">
-            <label for="username">Username</label>
-            <input
-                type="text"
-                id="username"
-                name="username"
-                value="{{ request.form.get('username', '') }}"
-                required
-                maxlength="30"
-                autocomplete="username"
-                pattern="[a-zA-Z0-9_]{3,30}"
-                title="Username must be 3 to 30 characters and contain only letters, numbers, and underscores"
-            >
+        <form method="POST" action="{{ url_for('register') }}">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    value="{{ request.form.get('username', '') }}"
+                    required
+                    maxlength="30"
+                    autocomplete="username"
+                    pattern="[a-zA-Z0-9_]{3,30}"
+                    title="Username must be 3 to 30 characters and contain only letters, numbers, and underscores"
+                    placeholder="Choose a username"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    required
+                    minlength="8"
+                    autocomplete="new-password"
+                    placeholder="Create a password"
+                >
+            </div>
+
+            <div class="password-note">
+                Username: 3–30 letters, numbers, or underscores.<br>
+                Password must be at least 8 characters.
+            </div>
+
+            <button type="submit" class="btn">Register</button>
+        </form>
+
+        <div class="auth-footer">
+            Already have an account?
+            <a href="{{ url_for('login') }}">Login</a>
         </div>
-
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input
-                type="password"
-                id="password"
-                name="password"
-                required
-                minlength="8"
-                autocomplete="new-password"
-            >
-        </div>
-
-        <div class="password-note">
-            Username: 3–30 letters, numbers, or underscores.<br>
-            Password must be at least 8 characters.
-        </div>
-
-        <button type="submit" class="btn">Register</button>
-    </form>
-
-    <div class="auth-footer">
-        Already have an account?
-        <a href="{{ url_for('login') }}">Login</a>
     </div>
 </div>
 

@@ -6,87 +6,205 @@
 
 <style>
     .feed-wrapper {
-        max-width: 700px;
+        max-width: 760px;
         margin: 0 auto;
     }
 
-    .post-form-card,
-	.post-card {
-		background: #fff;
-		border-radius: 12px;
-		box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-		padding: 20px;
-		margin-bottom: 20px;
-	}
-
-	.post-card.new-post {
-		background: #ffe5e5;
-		border: 1px solid #ff4d4d;
-		transition: 0.3s ease;
-	}
+    .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        margin-bottom: 22px;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
 
     .feed-title {
-        font-size: 28px;
-        font-weight: bold;
-        margin-bottom: 5px;
+        font-size: 32px;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 6px;
+        line-height: 1.1;
     }
 
     .feed-subtitle {
-        color: #666;
-        margin-bottom: 20px;
+        color: #6b7280;
         font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .post-form-card,
+    .post-card,
+    .empty-state {
+        background: rgba(255, 255, 255, 0.97);
+        border: 1px solid #e5e7eb;
+        border-radius: 18px;
+        box-shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
+    }
+
+    .post-form-card {
+        padding: 22px;
+        margin-bottom: 22px;
+    }
+
+    .composer-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+    }
+
+    .composer-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .composer-hint {
+        font-size: 13px;
+        color: #6b7280;
     }
 
     .post-form textarea {
         width: 100%;
-        min-height: 100px;
-        padding: 12px;
-        border: 1px solid #ccc;
-        border-radius: 8px;
+        min-height: 120px;
+        padding: 14px 15px;
+        border: 1px solid #d1d5db;
+        border-radius: 14px;
         resize: vertical;
         font-family: Arial, sans-serif;
         font-size: 14px;
+        line-height: 1.5;
         box-sizing: border-box;
         margin-bottom: 12px;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        background: #fff;
+    }
+
+    .post-form textarea:focus {
+        outline: none;
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.18);
+    }
+
+    .composer-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .char-counter {
+        font-size: 13px;
+        color: #6b7280;
     }
 
     .post-form button {
-        background: #4facfe;
+        background: linear-gradient(135deg, #4facfe, #2563eb);
         color: white;
         border: none;
-        padding: 10px 18px;
-        border-radius: 8px;
-        font-weight: bold;
+        padding: 11px 20px;
+        border-radius: 12px;
+        font-weight: 700;
         cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+        box-shadow: 0 10px 20px rgba(37, 99, 235, 0.22);
     }
 
     .post-form button:hover {
-        background: #3a8dde;
+        transform: translateY(-1px);
+        opacity: 0.97;
+    }
+
+    .post-form button:active {
+        transform: translateY(0);
+    }
+
+    .post-form button:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .post-card {
+        padding: 20px;
+        margin-bottom: 18px;
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .post-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 38px rgba(15, 23, 42, 0.10);
+    }
+
+    .post-card.new-post {
+        border-color: #93c5fd;
+        box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.25), 0 14px 35px rgba(15, 23, 42, 0.08);
+        animation: fadeHighlight 2s ease forwards;
+    }
+
+    @keyframes fadeHighlight {
+        0% {
+            background: #eff6ff;
+        }
+        100% {
+            background: rgba(255, 255, 255, 0.97);
+        }
     }
 
     .post-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 12px;
+        margin-bottom: 14px;
+        gap: 12px;
+    }
+
+    .post-author-wrap {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }
+
+    .post-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+        color: #1d4ed8;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 14px;
+        flex-shrink: 0;
     }
 
     .post-author {
-        font-weight: bold;
-        color: #2c3e50;
+        font-weight: 700;
+        color: #1f2937;
+        font-size: 15px;
+        word-break: break-word;
     }
 
-    .post-id {
+    .post-meta {
         font-size: 12px;
-        color: #999;
+        color: #9ca3af;
+        white-space: nowrap;
     }
 
     .post-content {
         font-size: 15px;
-        color: #333;
-        line-height: 1.5;
-        margin-bottom: 15px;
+        color: #374151;
+        line-height: 1.7;
+        margin-bottom: 16px;
         word-wrap: break-word;
+        white-space: pre-wrap;
     }
 
     .reactions {
@@ -96,51 +214,84 @@
     }
 
     .reaction-btn {
-        border: 1px solid #ddd;
-        background: #f8f9fb;
+        border: 1px solid #dbe3ee;
+        background: #f8fafc;
         border-radius: 999px;
-        padding: 8px 14px;
+        padding: 9px 14px;
         cursor: pointer;
         font-size: 14px;
+        color: #334155;
         transition: 0.2s ease;
     }
 
     .reaction-btn:hover {
-        background: #eef6ff;
-        border-color: #4facfe;
-    }
-
-    .empty-state {
-        background: #fff;
-        border-radius: 12px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-        padding: 30px;
-        text-align: center;
-        color: #666;
-    }
-
-    .top-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-
-    .error-message {
-        background: #ffe5e5;
-        color: #b30000;
-        border: 1px solid #ffb3b3;
-        padding: 10px 14px;
-        border-radius: 8px;
-        margin-bottom: 15px;
+        background: #eff6ff;
+        border-color: #60a5fa;
+        color: #1d4ed8;
     }
 
     .reaction-btn.active {
-        background: #e8f3ff;
-        border-color: #4facfe;
-        font-weight: bold;
+        background: #e8f1ff;
+        border-color: #60a5fa;
+        color: #1d4ed8;
+        font-weight: 700;
+    }
+
+    .empty-state {
+        padding: 36px 24px;
+        text-align: center;
+        color: #6b7280;
+    }
+
+    .empty-state-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 8px;
+    }
+
+    .empty-state-text {
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .error-message {
+        background: #fef2f2;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
+        padding: 12px 14px;
+        border-radius: 12px;
+        margin-bottom: 16px;
+        font-size: 14px;
+    }
+
+    @media (max-width: 640px) {
+        .feed-title {
+            font-size: 28px;
+        }
+
+        .post-form-card,
+        .post-card,
+        .empty-state {
+            border-radius: 14px;
+        }
+
+        .post-form-card,
+        .post-card {
+            padding: 16px;
+        }
+
+        .post-header {
+            align-items: flex-start;
+        }
+
+        .composer-footer {
+            align-items: stretch;
+        }
+
+        .post-form button {
+            width: 100%;
+        }
     }
 </style>
 
@@ -159,15 +310,26 @@
     {% endif %}
 
     <div class="post-form-card">
+        <div class="composer-header">
+            <div class="composer-title">Create a post</div>
+            <div class="composer-hint">Keep it short, clear, and friendly.</div>
+        </div>
+
         <form method="POST" action="{{ url_for('feed') }}" class="post-form" id="post-form">
             <textarea
+                id="post-content"
                 name="content"
                 maxlength="200"
                 placeholder="What's on your mind?"
                 required
             ></textarea>
 
-            <button type="submit">Post</button>
+            <div class="composer-footer">
+                <div class="char-counter">
+                    <span id="char-count">0</span>/200
+                </div>
+                <button type="submit" id="post-submit-btn">Post</button>
+            </div>
         </form>
     </div>
 
@@ -176,8 +338,14 @@
             {% for post in posts %}
                 <div class="post-card">
                     <div class="post-header">
-                        <div class="post-author">@{{ post.user }}</div>
-                        <div class="post-id">Post #{{ post.id }}</div>
+                        <div class="post-author-wrap">
+                            <div class="post-avatar">
+                                {{ (post.user[:1] if post.user else "?")|upper }}
+                            </div>
+                            <div>
+                                <div class="post-author">@{{ post.user }}</div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="post-content">{{ post.content }}</div>
@@ -217,7 +385,10 @@
             {% endfor %}
         {% else %}
             <div class="empty-state">
-                No posts yet. Be the first to post something.
+                <div class="empty-state-title">No posts yet</div>
+                <div class="empty-state-text">
+                    Be the first to post something and start the conversation.
+                </div>
             </div>
         {% endif %}
     </div>
@@ -226,13 +397,19 @@
 <script>
     window.isSubmittingPost = false;
 
+    const MAX_VISIBLE_POSTS = 20;
     let lastPostIds = new Set();
     const currentUser = "{{ current_user.username }}";
-	
+
     function escapeHtml(text) {
         const div = document.createElement("div");
         div.textContent = text || "";
         return div.innerHTML;
+    }
+
+    function getAvatarLetter(username) {
+        if (!username || !username.trim()) return "?";
+        return username.trim().charAt(0).toUpperCase();
     }
 
     function updateReactionButtons(postId, reactions, selectedReaction = null) {
@@ -287,37 +464,16 @@
         }
     }
 
-    function renderPosts(posts) {
-		const container = document.getElementById("posts-container");
-
-    if (!container) return;
-
-    if (!posts || posts.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                No posts yet. Be the first to post something.
-            </div>
-        `;
-        lastPostIds = new Set();
-
-        return;
-    }
-
-    const newIds = new Set();
-
-    container.innerHTML = posts.map(post => {
-        newIds.add(post.id);
-
-    const isNew =
-		lastPostIds.size > 0 &&
-		!lastPostIds.has(post.id) &&
-		post.user !== currentUser;
-
+    function createPostHtml(post, isNew = false) {
         return `
             <div class="post-card ${isNew ? 'new-post' : ''}">
                 <div class="post-header">
-                    <div class="post-author">@${escapeHtml(post.user)}</div>
-                    <div class="post-id">Post #${post.id}</div>
+                    <div class="post-author-wrap">
+                        <div class="post-avatar">${getAvatarLetter(post.user)}</div>
+                        <div>
+                            <div class="post-author">@${escapeHtml(post.user)}</div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="post-content">${escapeHtml(post.content)}</div>
@@ -355,46 +511,108 @@
                 </div>
             </div>
         `;
-    }).join("");
+    }
 
-    lastPostIds = newIds;
+    function renderPosts(posts) {
+        const container = document.getElementById("posts-container");
+        if (!container) return;
 
-    setTimeout(() => {
-        document.querySelectorAll(".post-card.new-post").forEach(el => {
-            el.classList.remove("new-post");
-        });
-    }, 2000);
-	}
-
-async function loadMessages() {
-    if (window.isSubmittingPost) return;
-
-    try {
-        const response = await fetch("/messages");
-
-        if (!response.ok) {
+        if (!posts || posts.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-title">No posts yet</div>
+                    <div class="empty-state-text">
+                        Be the first to post something and start the conversation.
+                    </div>
+                </div>
+            `;
+            lastPostIds = new Set();
             return;
         }
 
-        const posts = await response.json();
-        renderPosts(posts);
-    } catch (error) {
-        console.error("Failed to load messages");
-    }
-}
+        const limitedPosts = posts.slice(0, MAX_VISIBLE_POSTS);
+        const newIds = new Set();
 
-loadMessages();
-setInterval(loadMessages, 2000);
+        container.innerHTML = limitedPosts.map(post => {
+            newIds.add(post.id);
+            return createPostHtml(post, false);
+        }).join("");
+
+        lastPostIds = newIds;
+    }
+
+    function prependPost(post) {
+        const container = document.getElementById("posts-container");
+        if (!container) return;
+
+        const emptyState = container.querySelector(".empty-state");
+        if (emptyState) {
+            container.innerHTML = "";
+        }
+
+        container.insertAdjacentHTML("afterbegin", createPostHtml(post, true));
+        lastPostIds.add(post.id);
+
+        const allPosts = container.querySelectorAll(".post-card");
+        if (allPosts.length > MAX_VISIBLE_POSTS) {
+            allPosts[allPosts.length - 1].remove();
+        }
+    }
+
+    async function loadMessages() {
+        if (window.isSubmittingPost) return;
+
+        try {
+            const response = await fetch("/messages");
+
+            if (!response.ok) {
+                return;
+            }
+
+            const posts = await response.json();
+            renderPosts(posts);
+        } catch (error) {
+            console.error("Failed to load messages");
+        }
+    }
+
+    async function fetchLatestPosts() {
+        try {
+            const response = await fetch("/messages");
+
+            if (!response.ok) {
+                return [];
+            }
+
+            return await response.json();
+        } catch (error) {
+            return [];
+        }
+    }
 
     const ajaxPostForm = document.getElementById("post-form");
+    const textarea = document.getElementById("post-content");
+    const charCount = document.getElementById("char-count");
+    const submitBtn = document.getElementById("post-submit-btn");
+
+    if (textarea && charCount) {
+        function updateCharCount() {
+            charCount.textContent = textarea.value.length;
+        }
+
+        textarea.addEventListener("input", updateCharCount);
+        updateCharCount();
+    }
+
+    loadMessages();
+    setInterval(loadMessages, 2000);
 
     if (ajaxPostForm) {
-        ajaxPostForm.addEventListener("submit", function(e) {
+        ajaxPostForm.addEventListener("submit", async function(e) {
             e.preventDefault();
 
             window.isSubmittingPost = true;
 
-            const textarea = ajaxPostForm.querySelector('textarea[name="content"]');
             const content = textarea.value.trim();
 
             if (!content) {
@@ -403,26 +621,57 @@ setInterval(loadMessages, 2000);
                 return;
             }
 
-            fetch("{{ url_for('feed') }}", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded"
-                },
-                body: "content=" + encodeURIComponent(content)
-            })
-            .then(response => {
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = "Posting...";
+            }
+
+            try {
+                const response = await fetch("{{ url_for('feed') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: "content=" + encodeURIComponent(content)
+                });
+
                 if (!response.ok) {
                     throw new Error("Failed to post");
                 }
 
                 textarea.value = "";
+                if (charCount) {
+                    charCount.textContent = "0";
+                }
+
+                const latestPosts = await fetchLatestPosts();
+
+                if (latestPosts && latestPosts.length > 0) {
+                    const newestPost = latestPosts[0];
+
+                    if (!lastPostIds.has(newestPost.id)) {
+                        prependPost(newestPost);
+                    } else {
+                        renderPosts(latestPosts);
+                    }
+                }
+
                 window.isSubmittingPost = false;
-                location.reload();
-            })
-            .catch(() => {
+
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = "Post";
+                }
+            } catch (error) {
                 window.isSubmittingPost = false;
+
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = "Post";
+                }
+
                 alert("Failed to post");
-            });
+            }
         });
     }
 </script>

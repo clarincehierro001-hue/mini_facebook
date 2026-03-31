@@ -6,45 +6,119 @@
     <title>{% block title %}My App{% endblock %}</title>
 
     <style>
+        :root {
+            --bg: #f4f7fb;
+            --surface: rgba(255, 255, 255, 0.92);
+            --surface-solid: #ffffff;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --nav: #1f2a37;
+            --nav-accent: #60a5fa;
+            --border: #e5e7eb;
+            --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+
+            --success-bg: #ecfdf3;
+            --success-text: #166534;
+            --success-border: #bbf7d0;
+
+            --error-bg: #fef2f2;
+            --error-text: #b91c1c;
+            --error-border: #fecaca;
+
+            --warning-bg: #fffbeb;
+            --warning-text: #92400e;
+            --warning-border: #fde68a;
+
+            --info-bg: #eff6ff;
+            --info-text: #1d4ed8;
+            --info-border: #bfdbfe;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
             margin: 0;
             font-family: Arial, sans-serif;
-            background: #f5f7fa;
-            color: #222;
+            background:
+                radial-gradient(circle at top left, rgba(79, 172, 254, 0.10), transparent 30%),
+                radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 25%),
+                var(--bg);
+            color: var(--text);
+            min-height: 100vh;
         }
 
         .navbar {
-            background: #2c3e50;
-            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: rgba(31, 42, 55, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 14px 22px;
             color: white;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
             gap: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
         }
 
         .navbar-left,
         .navbar-right {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
             flex-wrap: wrap;
         }
 
-        .navbar a {
-            color: white;
+        .brand-link {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            color: #ffffff;
             text-decoration: none;
-            font-weight: bold;
+            padding: 8px 12px;
+            border-radius: 10px;
+            transition: background 0.2s ease, transform 0.2s ease;
         }
 
-        .navbar a:hover {
-            text-decoration: underline;
+        .brand-link:hover {
+            background: rgba(255, 255, 255, 0.08);
+            text-decoration: none;
+            transform: translateY(-1px);
+        }
+
+        .nav-link {
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 8px 12px;
+            border-radius: 10px;
+            transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+            text-decoration: none;
+            transform: translateY(-1px);
         }
 
         .navbar-user {
             font-size: 14px;
-            opacity: 0.95;
+            color: rgba(255, 255, 255, 0.92);
+            background: rgba(255, 255, 255, 0.08);
+            padding: 8px 12px;
+            border-radius: 999px;
         }
 
         .logout-form {
@@ -53,42 +127,125 @@
         }
 
         .logout-btn {
-            background: #4facfe;
+            background: linear-gradient(135deg, var(--nav-accent), var(--primary));
             color: white;
             border: none;
-            padding: 8px 14px;
-            border-radius: 6px;
-            font-weight: bold;
+            padding: 9px 15px;
+            border-radius: 10px;
+            font-weight: 700;
             cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
         }
 
         .logout-btn:hover {
-            background: #3a8dde;
+            transform: translateY(-1px);
+            opacity: 0.96;
+        }
+
+        .logout-btn:active {
+            transform: translateY(0);
+        }
+
+        .page-shell {
+            width: 100%;
+            padding: 28px 18px 40px;
         }
 
         .container {
-            max-width: 900px;
-            margin: 30px auto;
-            padding: 20px;
-            box-sizing: border-box;
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 24px;
+            background: var(--surface);
+            border: 1px solid rgba(229, 231, 235, 0.7);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+        }
+
+        .alerts {
+            margin-bottom: 18px;
         }
 
         .alert {
-            padding: 12px;
-            margin-bottom: 15px;
-            border-radius: 6px;
-        }
-
-        .alert-error {
-            background: #ffe0e0;
-            color: #a10000;
-            border: 1px solid #ffb3b3;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            font-size: 14px;
+            line-height: 1.5;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
         }
 
         .alert-success {
-            background: #e0ffe5;
-            color: #006b21;
-            border: 1px solid #a8e6b5;
+            background: var(--success-bg);
+            color: var(--success-text);
+            border-color: var(--success-border);
+        }
+
+        .alert-error,
+        .alert-danger {
+            background: var(--error-bg);
+            color: var(--error-text);
+            border-color: var(--error-border);
+        }
+
+        .alert-warning {
+            background: var(--warning-bg);
+            color: var(--warning-text);
+            border-color: var(--warning-border);
+        }
+
+        .alert-info,
+        .alert-message {
+            background: var(--info-bg);
+            color: var(--info-text);
+            border-color: var(--info-border);
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 14px 16px;
+            }
+
+            .navbar-left,
+            .navbar-right {
+                width: 100%;
+            }
+
+            .navbar-right {
+                justify-content: flex-start;
+            }
+
+            .container {
+                padding: 18px;
+                border-radius: 14px;
+            }
+
+            .page-shell {
+                padding: 18px 12px 30px;
+            }
+
+            .brand-link {
+                font-size: 18px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .nav-link,
+            .brand-link,
+            .logout-btn,
+            .navbar-user {
+                width: 100%;
+                text-align: center;
+            }
+
+            .logout-form {
+                width: 100%;
+            }
+
+            .logout-btn {
+                width: 100%;
+            }
         }
     </style>
 
@@ -98,42 +255,46 @@
 
     <div class="navbar">
         <div class="navbar-left">
-            <a href="{{ url_for('home') }}">MyApp</a>
+            <a href="{{ url_for('home') }}" class="brand-link">MyApp</a>
         </div>
 
         <div class="navbar-right">
             {% if current_user.is_authenticated %}
                 <span class="navbar-user">Hello, {{ current_user.username }}</span>
-                <a href="{{ url_for('feed') }}">Feed</a>
+                <a href="{{ url_for('feed') }}" class="nav-link">Feed</a>
 
                 <form action="{{ url_for('logout') }}" method="POST" class="logout-form">
                     <button type="submit" class="logout-btn">Logout</button>
                 </form>
             {% else %}
-                <a href="{{ url_for('login') }}">Login</a>
-                <a href="{{ url_for('register') }}">Register</a>
+                <a href="{{ url_for('login') }}" class="nav-link">Login</a>
+                <a href="{{ url_for('register') }}" class="nav-link">Register</a>
             {% endif %}
         </div>
     </div>
 
-    <div class="container">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">
-                        {{ message }}
+    <div class="page-shell">
+        <div class="container">
+            <div class="alerts">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                {% if error %}
+                    <div class="alert alert-error">
+                        {{ error }}
                     </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        {% if error %}
-            <div class="alert alert-error">
-                {{ error }}
+                {% endif %}
             </div>
-        {% endif %}
 
-        {% block content %}{% endblock %}
+            {% block content %}{% endblock %}
+        </div>
     </div>
 
 </body>
