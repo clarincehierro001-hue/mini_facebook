@@ -225,10 +225,10 @@
 
 <script>
     window.isSubmittingPost = false;
-	
-	let lastPostIds = new Set();
-	let firstLoad = true;
 
+    let lastPostIds = new Set();
+    const currentUser = "{{ current_user.username }}";
+	
     function escapeHtml(text) {
         const div = document.createElement("div");
         div.textContent = text || "";
@@ -288,7 +288,7 @@
     }
 
     function renderPosts(posts) {
-    const container = document.getElementById("posts-container");
+		const container = document.getElementById("posts-container");
 
     if (!container) return;
 
@@ -299,7 +299,7 @@
             </div>
         `;
         lastPostIds = new Set();
-        firstLoad = false;
+
         return;
     }
 
@@ -308,7 +308,10 @@
     container.innerHTML = posts.map(post => {
         newIds.add(post.id);
 
-        const isNew = !firstLoad && !lastPostIds.has(post.id);
+    const isNew =
+		lastPostIds.size > 0 &&
+		!lastPostIds.has(post.id) &&
+		post.user !== currentUser;
 
         return `
             <div class="post-card ${isNew ? 'new-post' : ''}">
@@ -355,7 +358,6 @@
     }).join("");
 
     lastPostIds = newIds;
-    firstLoad = false;
 
     setTimeout(() => {
         document.querySelectorAll(".post-card.new-post").forEach(el => {
