@@ -37,8 +37,23 @@ import logging
 logging.basicConfig(level=logging.INFO)
 app.logger.setLevel(logging.INFO)
 
+app = Flask(__name__)
+app.secret_key = "your_secret_key"
+
+# Dummy in-memory storage (replace with a database)
+users = ["anelo", "aleon", "george"]
+private_messages = []  # List of dicts: {from_user, to_user, content, timestamp, id}
+
+message_id_counter = 1
 
 # ---------------- CONFIG ----------------
+def get_user_messages(user1, user2):
+    """Return messages between two users, sorted by timestamp."""
+    msgs = [msg for msg in private_messages
+            if (msg['from_user'] == user1 and msg['to_user'] == user2)
+            or (msg['from_user'] == user2 and msg['to_user'] == user1)]
+    return sorted(msgs, key=lambda x: x['timestamp'])
+
 def get_database_uri():
     db_url = os.environ.get("DATABASE_URL", "sqlite:///db.sqlite3")
     if db_url.startswith("postgres://"):
@@ -276,6 +291,83 @@ def unauthorized():
 
 
 # ---------------- ROUTES ----------------
+# PRIVATE CHAT STORAGE (replace with DB)
+private_messages = []
+message_id = 1
+
+def get_private_messages(user1, user2):
+    return sorted([
+        m for m in private_messages
+        if (m["from"] == user1 and m["to"] == user2) or
+           (m["from"] == user2 and m["to"] == user1)
+    ], key=lambda x: x["id"])
+
+
+@app.route("/chat/private/<username>")
+def get_private_chat(username):
+    current_user = session.get("username")
+    msgs = get_private_messages(current_user, username)
+    return jsonify(msgs)
+
+
+@app.route("/chat/private/send/<username>", methods=["POST"])
+def send_private_chat(username):
+    global message_id
+    current_user = session.get("username")
+
+    content = request.form.get("content", "").strip()
+    if not content:
+        return jsonify({"success": False})
+
+    msg = {
+        "id": message_id,
+        "from": current_user,
+        "to": username,
+        "content": content
+    }
+    message_id += 1
+    private_messages.append(msg)
+
+    return jsonify({"success": True})
+
+@app.route("/private/<username>")
+def private_chat(username):
+    current_user = session.get("username", "george")  # Replace with your auth
+    if username not in users or username == current_user:
+        return "Invalid user", 404
+    messages = get_user_messages(current_user, username)
+    return render_template("private_chat.html", chat_user=username, messages=messages, current_user=current_user)
+
+@app.route("/private/<username>/send", methods=["POST"])
+def send_private_message(username):
+    global message_id_counter
+    current_user = session.get("username", "aleon")
+    if username not in users or username == current_user:
+        return jsonify({"success": False, "error": "Invalid user"}), 400
+
+    content = request.form.get("content", "").strip()
+    if not content:
+        return jsonify({"success": False, "error": "Empty message"}), 400
+
+    msg = {
+        "id": message_id_counter,
+        "from_user": current_user,
+        "to_user": username,
+        "content": content,
+        "timestamp": datetime.utcnow()
+    }
+    message_id_counter += 1
+    private_messages.append(msg)
+    return jsonify({"success": True, "message": msg})
+
+@app.route("/private/<username>/messages")
+def fetch_private_messages(username):
+    current_user = session.get("username", "anelo")
+    if username not in users or username == current_user:
+        return jsonify([])
+    msgs = get_user_messages(current_user, username)
+    return jsonify(msgs)
+
 @app.route("/")
 def home():
     if current_user.is_authenticated:
