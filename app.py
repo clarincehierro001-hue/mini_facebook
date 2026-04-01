@@ -1,7 +1,7 @@
 import os
 import re
 import secrets
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from flask import (
     Flask,
@@ -27,6 +27,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import UniqueConstraint
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload, selectinload
+
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"))
@@ -90,9 +91,10 @@ class User(UserMixin, db.Model):
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.String(200), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    user = db.relationship("User", backref="posts")
+    user = db.relationship("User", backref="posts", lazy="joined")
 
     reactions = db.relationship(
         "Reaction",
@@ -117,16 +119,25 @@ class Reaction(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey("post.id"), nullable=False)
 
-    user = db.relationship("User", backref="reactions")
+    user = db.relationship("User", backref="reactions", lazy="joined")
 
     __table_args__ = (
         UniqueConstraint("user_id", "post_id", name="unique_user_post_reaction"),
     )
 
 
+class ChatMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.String(300), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    user = db.relationship("User", backref="chat_messages", lazy="joined")
+
+
 # ---------------- HELPERS ----------------
 def normalize_username(username):
-    return username.strip().lower()
+    return (username or "").strip().lower()
 
 
 def valid_username(username):
@@ -217,6 +228,25 @@ def load_posts_with_reactions():
     return post_items
 
 
+def load_chat_messages(limit=100):
+    messages = (
+        ChatMessage.query.options(joinedload(ChatMessage.user))
+        .order_by(ChatMessage.id.asc())
+        .limit(limit)
+        .all()
+    )
+
+    return [
+        {
+            "id": msg.id,
+            "content": msg.content,
+            "user": msg.user.username,
+            "created_at": msg.created_at.isoformat(),
+        }
+        for msg in messages
+    ]
+
+
 def render_feed(error=None):
     return render_template(
         "feed.html",
@@ -261,21 +291,18 @@ def register():
             return render_template(
                 "register.html",
                 error="All fields are required",
-                entered_username=username,
             )
 
         if not valid_username(username):
             return render_template(
                 "register.html",
                 error="Username must be 3-30 characters and contain only letters, numbers, and underscores",
-                entered_username=username,
             )
 
         if len(password) < 8:
             return render_template(
                 "register.html",
                 error="Password must be at least 8 characters",
-                entered_username=username,
             )
 
         user = User(username=username)
@@ -289,7 +316,6 @@ def register():
             return render_template(
                 "register.html",
                 error="Username already taken",
-                entered_username=username,
             )
 
         flash("Account created successfully. Please log in.", "success")
@@ -312,7 +338,6 @@ def login():
             return render_template(
                 "login.html",
                 error="Username and password are required",
-                entered_username=username,
             )
 
         user = User.query.filter_by(username=username).first()
@@ -326,7 +351,6 @@ def login():
         return render_template(
             "login.html",
             error="Invalid credentials",
-            entered_username=username,
         )
 
     return render_template("login.html")
@@ -353,6 +377,10 @@ def feed():
             db.session.rollback()
             return render_feed(error="Unable to create post right now. Please try again.")
 
+        # supports fetch() posting from feed.js
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"success": True}), 201
+
         flash("Post created.", "success")
         return redirect(url_for("feed"))
 
@@ -362,8 +390,35 @@ def feed():
 @app.route("/messages")
 @login_required
 def messages():
-    # Kept as-is so other file can still call this endpoint.
     return jsonify(load_posts_with_reactions())
+
+
+@app.route("/chat/messages")
+@login_required
+def chat_messages():
+    return jsonify(load_chat_messages())
+
+
+@app.route("/chat/send", methods=["POST"])
+@login_required
+def chat_send():
+    content = request.form.get("content", "").strip()
+
+    if not content:
+        return jsonify({"success": False, "error": "Message cannot be empty"}), 400
+
+    if len(content) > 300:
+        return jsonify({"success": False, "error": "Message must be 300 characters or fewer"}), 400
+
+    message = ChatMessage(content=content, user=current_user)
+
+    try:
+        db.session.add(message)
+        db.session.commit()
+        return jsonify({"success": True}), 201
+    except Exception:
+        db.session.rollback()
+        return jsonify({"success": False, "error": "Unable to send message"}), 500
 
 
 @app.route("/react/<int:post_id>", methods=["POST"])
@@ -389,6 +444,7 @@ def react(post_id):
             if existing_reaction.reaction_type == reaction_type:
                 db.session.delete(existing_reaction)
                 db.session.commit()
+                db.session.refresh(post)
                 return jsonify(
                     {
                         "success": True,
@@ -399,6 +455,7 @@ def react(post_id):
 
             existing_reaction.reaction_type = reaction_type
             db.session.commit()
+            db.session.refresh(post)
             return jsonify(
                 {
                     "success": True,
@@ -414,6 +471,7 @@ def react(post_id):
         )
         db.session.add(new_reaction)
         db.session.commit()
+        db.session.refresh(post)
 
         return jsonify(
             {
@@ -456,7 +514,7 @@ def logout():
 def bad_request(error):
     description = getattr(error, "description", "Bad request")
 
-    if request.path.startswith("/react/"):
+    if request.path.startswith("/react/") or request.path.startswith("/chat/"):
         return jsonify({"success": False, "error": description}), 400
 
     if current_user.is_authenticated:
@@ -470,7 +528,7 @@ def bad_request(error):
 
 @app.errorhandler(404)
 def not_found(error):
-    if request.path.startswith("/react/"):
+    if request.path.startswith("/react/") or request.path.startswith("/chat/"):
         return jsonify({"success": False, "error": "Not found"}), 404
 
     if current_user.is_authenticated:
