@@ -2,6 +2,7 @@ import os
 import re
 import secrets
 from datetime import datetime, timedelta
+import traceback
 
 from flask import (
     Flask,
@@ -330,28 +331,28 @@ def login():
         return redirect(url_for("feed"))
 
     if request.method == "POST":
-        username = normalize_username(request.form.get("username", ""))
-        password = request.form.get("password", "")
-        remember = request.form.get("remember") == "on"
+        try:
+            username = normalize_username(request.form.get("username", ""))
+            password = request.form.get("password", "")
 
-        if not username or not password:
-            return render_template(
-                "login.html",
-                error="Username and password are required",
-            )
+            if not username or not password:
+                return render_template("login.html", error="All fields are required")
 
-        user = User.query.filter_by(username=username).first()
+            user = User.query.filter_by(username=username).first()
 
-        if user and user.check_password(password):
-            session.permanent = True
-            login_user(user, remember=remember)
-            flash(f"Welcome back, {user.username}!", "success")
-            return redirect(url_for("feed"))
+            if user and user.check_password(password):
+                remember = request.form.get("remember") == "on"
+                login_user(user, remember=remember)
+                flash("Logged in successfully.", "success")
+                return redirect(url_for("feed"))
 
-        return render_template(
-            "login.html",
-            error="Invalid credentials",
-        )
+            return render_template("login.html", error="Invalid username or password"), 401
+
+        except Exception as e:
+            db.session.rollback()
+            print("LOGIN ERROR:", str(e))
+            traceback.print_exc()
+            return render_template("login.html", error="Server error during login"), 500
 
     return render_template("login.html")
 
