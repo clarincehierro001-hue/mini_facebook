@@ -4,6 +4,210 @@
 
 {% block head %}
 <style>
+    .feed-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.25rem;
+    }
+
+    .feed-page-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 0;
+        font-size: 1.35rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+    }
+
+    .feed-page-title .divider {
+        color: var(--muted, #64748b);
+    }
+
+    .chatbox-trigger {
+        border: none;
+        background: transparent;
+        color: var(--primary, #2563eb);
+        font: inherit;
+        font-weight: 800;
+        cursor: pointer;
+        padding: 0;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .chatbox-trigger:hover {
+        opacity: 0.8;
+        transform: translateY(-1px);
+    }
+
+    .chatbox-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.35);
+        backdrop-filter: blur(2px);
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.25s ease;
+        z-index: 999;
+    }
+
+    .chatbox-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .chatbox-panel {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: min(420px, 100%);
+        height: 100vh;
+        background: #ffffff;
+        border-left: 1px solid #e2e8f0;
+        box-shadow: -18px 0 40px rgba(15, 23, 42, 0.12);
+        transform: translateX(100%);
+        transition: transform 0.28s ease;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chatbox-panel.active {
+        transform: translateX(0);
+    }
+
+    .chatbox-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1rem 0.9rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+
+    .chatbox-header h2 {
+        margin: 0;
+        font-size: 1.1rem;
+        color: #0f172a;
+    }
+
+    .chatbox-header p {
+        margin: 0.2rem 0 0;
+        font-size: 0.85rem;
+        color: #64748b;
+    }
+
+    .chatbox-close {
+        border: none;
+        background: transparent;
+        font-size: 1.8rem;
+        line-height: 1;
+        cursor: pointer;
+        color: #334155;
+        padding: 0;
+    }
+
+    .chatbox-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+        background: #f8fafc;
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+    }
+
+    .chat-message {
+        display: flex;
+    }
+
+    .chat-message.incoming {
+        justify-content: flex-start;
+    }
+
+    .chat-message.outgoing {
+        justify-content: flex-end;
+    }
+
+    .bubble {
+        max-width: 80%;
+        padding: 0.8rem 1rem;
+        border-radius: 1rem;
+        font-size: 0.95rem;
+        line-height: 1.45;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+        word-break: break-word;
+    }
+
+    .incoming .bubble {
+        background: #ffffff;
+        color: #0f172a;
+        border: 1px solid #e2e8f0;
+        border-bottom-left-radius: 0.35rem;
+    }
+
+    .outgoing .bubble {
+        background: #2563eb;
+        color: #ffffff;
+        border-bottom-right-radius: 0.35rem;
+    }
+
+    .chatbox-form {
+        display: flex;
+        gap: 0.75rem;
+        padding: 1rem;
+        border-top: 1px solid #e2e8f0;
+        background: #ffffff;
+    }
+
+    .chatbox-form textarea {
+        flex: 1;
+        min-height: 46px;
+        max-height: 120px;
+        border-radius: 0.9rem;
+        border: 1px solid #cbd5e1;
+        padding: 0.75rem 1rem;
+        outline: none;
+        font-size: 0.95rem;
+        font-family: inherit;
+        line-height: 1.4;
+        resize: none;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .chatbox-form textarea:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    .chatbox-form button {
+        height: 46px;
+        padding: 0 1.1rem;
+        border: none;
+        border-radius: 0.9rem;
+        background: #2563eb;
+        color: #ffffff;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+
+    .chatbox-form button:hover {
+        transform: translateY(-1px);
+        opacity: 0.92;
+    }
+
+    body.chatbox-open {
+        overflow: hidden;
+    }
+
+    @media (max-width: 640px) {
+        .chatbox-panel {
+            width: 100%;
+        }
+    }
+
     .feed-shell {
         max-width: 1080px;
         margin: 0 auto;
@@ -578,11 +782,21 @@
 {% endblock %}
 
 {% block content %}
+{% include "chatbox.html" %}
+
+<div class="feed-topbar">
+    <h1 class="feed-page-title">
+        <span>FEED</span>
+        <span class="divider">/</span>
+        <button type="button" class="chatbox-trigger" onclick="openChatbox()">CHATBOX</button>
+    </h1>
+</div>
+
 <div class="feed-shell">
     <div class="feed-wrapper">
         <div class="top-bar">
             <div>
-                <h1 class="feed-title">Feed</h1>
+                <h2 class="feed-title">Feed</h2>
                 <p class="feed-subtitle">
                     Welcome, <strong>{{ current_user.username }}</strong>. Share updates, react to posts, and connect with other users.
                 </p>
@@ -593,7 +807,7 @@
             </div>
         </div>
 
-        <div class="search-bar-card" aria-label="Search posts and users">
+        <div class="search-bar-card" aria-label="Search posts">
             <div class="search-bar-wrap">
                 <div class="search-icon" aria-hidden="true">🔎</div>
                 <input
@@ -621,6 +835,7 @@
             </div>
 
             <form method="POST" action="{{ url_for('feed') }}" class="post-form" id="post-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <textarea
                     id="post-content"
                     name="content"
@@ -642,9 +857,7 @@
         </div>
 
         <div class="feed-stats">
-            <div class="feed-stats-text">
-                Showing latest posts
-            </div>
+            <div class="feed-stats-text">Showing latest posts</div>
         </div>
 
         <div id="posts-container" aria-live="polite">
@@ -680,7 +893,7 @@
                             <div class="reactions">
                                 <button
                                     type="button"
-                                    class="reaction-btn"
+                                    class="reaction-btn {% if post.current_user_reaction == 'like' %}active{% endif %}"
                                     data-post-id="{{ post.id }}"
                                     data-reaction="like"
                                     onclick="reactToPost({{ post.id }}, 'like')"
@@ -690,7 +903,7 @@
 
                                 <button
                                     type="button"
-                                    class="reaction-btn"
+                                    class="reaction-btn {% if post.current_user_reaction == 'love' %}active{% endif %}"
                                     data-post-id="{{ post.id }}"
                                     data-reaction="love"
                                     onclick="reactToPost({{ post.id }}, 'love')"
@@ -700,7 +913,7 @@
 
                                 <button
                                     type="button"
-                                    class="reaction-btn"
+                                    class="reaction-btn {% if post.current_user_reaction == 'laugh' %}active{% endif %}"
                                     data-post-id="{{ post.id }}"
                                     data-reaction="laugh"
                                     onclick="reactToPost({{ post.id }}, 'laugh')"
@@ -735,10 +948,10 @@
     const MAX_VISIBLE_POSTS = 20;
     const POLL_INTERVAL_MS = 3000;
     const currentUser = "{{ current_user.username|e }}";
+    const csrfToken = "{{ csrf_token()|e }}";
 
     let lastPostIds = new Set();
     let pollTimer = null;
-    let searchDebounce = null;
 
     function escapeHtml(text) {
         const div = document.createElement("div");
@@ -797,11 +1010,7 @@
                 countSpan.textContent = reactions[reaction];
             }
 
-            button.classList.remove("active");
-
-            if (selectedReaction && reaction === selectedReaction) {
-                button.classList.add("active");
-            }
+            button.classList.toggle("active", !!selectedReaction && reaction === selectedReaction);
         });
     }
 
@@ -810,14 +1019,19 @@
             const response = await fetch(`/react/${postId}`, {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken,
+                    "X-Requested-With": "XMLHttpRequest"
                 },
-                body: JSON.stringify({ reaction: reactionType })
+                body: JSON.stringify({
+                    reaction: reactionType,
+                    csrf_token: csrfToken
+                })
             });
 
             const data = await response.json();
 
-            if (!data.success) {
+            if (!response.ok || !data.success) {
                 alert(data.error || "Failed to react.");
                 return;
             }
@@ -839,6 +1053,7 @@
         const mine = isCurrentUserPost(post.user);
         const safeUsername = escapeHtml(post.user || "");
         const safeContent = escapeHtml(post.content || "");
+        const selectedReaction = post.current_user_reaction || null;
 
         return `
             <div
@@ -863,7 +1078,7 @@
                     <div class="reactions">
                         <button
                             type="button"
-                            class="reaction-btn"
+                            class="reaction-btn ${selectedReaction === "like" ? "active" : ""}"
                             data-post-id="${post.id}"
                             data-reaction="like"
                             onclick="reactToPost(${post.id}, 'like')"
@@ -873,7 +1088,7 @@
 
                         <button
                             type="button"
-                            class="reaction-btn"
+                            class="reaction-btn ${selectedReaction === "love" ? "active" : ""}"
                             data-post-id="${post.id}"
                             data-reaction="love"
                             onclick="reactToPost(${post.id}, 'love')"
@@ -883,7 +1098,7 @@
 
                         <button
                             type="button"
-                            class="reaction-btn"
+                            class="reaction-btn ${selectedReaction === "laugh" ? "active" : ""}"
                             data-post-id="${post.id}"
                             data-reaction="laugh"
                             onclick="reactToPost(${post.id}, 'laugh')"
@@ -1025,39 +1240,35 @@
         resultsBox.innerHTML = "";
     }
 
-    async function searchRealUsers(query) {
+    function searchUsersFromLoadedPosts(query) {
         const resultsBox = document.getElementById("user-search-results");
         if (!resultsBox) return;
 
-        const trimmedQuery = query.trim();
-
+        const trimmedQuery = query.trim().toLowerCase();
         if (!trimmedQuery) {
             hideUserSearchResults();
             return;
         }
 
-        try {
-            const users = await fetchJson(`/search_users?q=${encodeURIComponent(trimmedQuery)}`, {
-                headers: {
-                    "X-Requested-With": "XMLHttpRequest"
-                }
-            });
+        const rows = Array.from(document.querySelectorAll("#posts-container .chat-row"));
+        const uniqueUsernames = [...new Set(
+            rows
+                .map(row => row.dataset.user || "")
+                .filter(username => username && username.includes(trimmedQuery))
+        )].slice(0, 8);
 
-            if (!users.length) {
-                resultsBox.style.display = "block";
-                resultsBox.innerHTML = `<div class="user-result-empty">No users found.</div>`;
-                return;
-            }
-
+        if (!uniqueUsernames.length) {
             resultsBox.style.display = "block";
-            resultsBox.innerHTML = users.map(user => `
-                <div class="user-result-item" data-username="${escapeAttribute(user.username)}" role="option">
-                    @${escapeHtml(user.username)}
-                </div>
-            `).join("");
-        } catch (error) {
-            hideUserSearchResults();
+            resultsBox.innerHTML = `<div class="user-result-empty">No users found in loaded posts.</div>`;
+            return;
         }
+
+        resultsBox.style.display = "block";
+        resultsBox.innerHTML = uniqueUsernames.map(username => `
+            <div class="user-result-item" data-username="${escapeAttribute(username)}" role="option">
+                @${escapeHtml(username)}
+            </div>
+        `).join("");
     }
 
     function filterPostsByUsername(username) {
@@ -1076,16 +1287,12 @@
         if (searchInput) {
             searchInput.addEventListener("input", function() {
                 applySearchFilter();
-
-                clearTimeout(searchDebounce);
-                searchDebounce = setTimeout(() => {
-                    searchRealUsers(searchInput.value);
-                }, 250);
+                searchUsersFromLoadedPosts(searchInput.value);
             });
 
             searchInput.addEventListener("focus", function() {
                 if (searchInput.value.trim()) {
-                    searchRealUsers(searchInput.value);
+                    searchUsersFromLoadedPosts(searchInput.value);
                 }
             });
 
@@ -1146,13 +1353,19 @@
             submitBtn.textContent = "Posting...";
 
             try {
+                const body = new URLSearchParams({
+                    content: content,
+                    csrf_token: csrfToken
+                });
+
                 const response = await fetch("{{ url_for('feed') }}", {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/x-www-form-urlencoded",
+                        "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                        "X-CSRFToken": csrfToken,
                         "X-Requested-With": "XMLHttpRequest"
                     },
-                    body: "content=" + encodeURIComponent(content)
+                    body: body.toString()
                 });
 
                 if (!response.ok) {
@@ -1179,7 +1392,6 @@
                 alert("Failed to post.");
             } finally {
                 window.isSubmittingPost = false;
-                submitBtn.disabled = false;
                 submitBtn.textContent = "Post";
                 updateCharCount();
             }
@@ -1194,15 +1406,91 @@
         pollTimer = setInterval(loadMessages, POLL_INTERVAL_MS);
 
         document.addEventListener("visibilitychange", function() {
-            if (document.hidden) return;
-            loadMessages();
+            if (!document.hidden) {
+                loadMessages();
+            }
         });
+    }
+
+    function openChatbox() {
+        const panel = document.getElementById("chatboxPanel");
+        const overlay = document.getElementById("chatboxOverlay");
+
+        if (!panel || !overlay) return;
+
+        panel.classList.add("active");
+        overlay.classList.add("active");
+        document.body.classList.add("chatbox-open");
+        panel.setAttribute("aria-hidden", "false");
+
+        setTimeout(() => {
+            const input = document.getElementById("chatInput");
+            if (input) input.focus();
+        }, 200);
+
+        const messages = document.getElementById("chatMessages");
+        if (messages) {
+            messages.scrollTop = messages.scrollHeight;
+        }
+    }
+
+    function closeChatbox() {
+        const panel = document.getElementById("chatboxPanel");
+        const overlay = document.getElementById("chatboxOverlay");
+
+        if (!panel || !overlay) return;
+
+        panel.classList.remove("active");
+        overlay.classList.remove("active");
+        document.body.classList.remove("chatbox-open");
+        panel.setAttribute("aria-hidden", "true");
+    }
+
+    function sendChatMessage(event) {
+        event.preventDefault();
+
+        const input = document.getElementById("chatInput");
+        const messages = document.getElementById("chatMessages");
+
+        if (!input || !messages) return;
+
+        const message = input.value.trim();
+        if (!message) return;
+
+        const wrapper = document.createElement("div");
+        wrapper.className = "chat-message outgoing";
+
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.textContent = message;
+
+        wrapper.appendChild(bubble);
+        messages.appendChild(wrapper);
+
+        messages.scrollTop = messages.scrollHeight;
+        input.value = "";
     }
 
     document.addEventListener("DOMContentLoaded", function() {
         initSearch();
         initComposer();
         initPolling();
+
+        const input = document.getElementById("chatInput");
+        if (input) {
+            input.addEventListener("keydown", function(e) {
+                if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendChatMessage(e);
+                }
+            });
+        }
+    });
+
+    document.addEventListener("keydown", function(event) {
+        if (event.key === "Escape") {
+            closeChatbox();
+        }
     });
 </script>
 {% endblock %}
