@@ -305,7 +305,9 @@
             </div>
         {% endif %}
 
-        <form method="POST" action="{{ url_for('login') }}" class="auth-form" novalidate>
+        <form class="auth-form" method="POST" action="{{ url_for('login') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
             <div class="form-group">
                 <div class="form-label-row">
                     <label for="username">Username</label>
