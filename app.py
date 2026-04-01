@@ -33,6 +33,10 @@ from sqlalchemy.orm import joinedload, selectinload
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"))
 
+import logging
+logging.basicConfig(level=logging.INFO)
+app.logger.setLevel(logging.INFO)
+
 
 # ---------------- CONFIG ----------------
 def get_database_uri():
@@ -508,6 +512,20 @@ def logout():
     session.pop("_csrf_token", None)
     flash("You have been logged out.", "info")
     return redirect(url_for("login"))
+
+
+@app.route("/test-db")
+def test_db():
+    try:
+        return {
+            "users": User.query.count(),
+            "posts": Post.query.count(),
+            "reactions": Reaction.query.count(),
+            "chat_messages": ChatMessage.query.count(),
+        }
+    except Exception as e:
+        app.logger.exception("TEST_DB ERROR")
+        return {"error": str(e)}, 500
 
 
 # ---------------- ERROR HANDLERS ----------------
