@@ -2,213 +2,337 @@
 
 {% block title %}Register{% endblock %}
 
-{% block content %}
-
+{% block head %}
 <style>
     .auth-page {
-        min-height: 70vh;
+        min-height: calc(100vh - 180px);
         display: flex;
         align-items: center;
         justify-content: center;
+        padding: 12px 0;
     }
 
-    .auth-container {
+    .auth-card {
         width: 100%;
-        max-width: 430px;
-        background: rgba(255, 255, 255, 0.96);
-        border: 1px solid #e5e7eb;
-        padding: 36px;
-        border-radius: 18px;
-        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.10);
+        max-width: 480px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.92));
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        box-shadow: var(--shadow-lg);
+        padding: 34px;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(14px);
+    }
+
+    .auth-card::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 4px;
+        background: linear-gradient(90deg, #60a5fa, var(--primary), #93c5fd);
+    }
+
+    .auth-header {
         text-align: center;
+        margin-bottom: 26px;
     }
 
     .auth-badge {
-        display: inline-block;
-        padding: 6px 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 12px;
         font-size: 12px;
-        font-weight: bold;
-        letter-spacing: 0.4px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: #2563eb;
-        background: #eff6ff;
-        border: 1px solid #bfdbfe;
+        color: var(--primary);
+        background: var(--primary-soft);
+        border: 1px solid rgba(96, 165, 250, 0.28);
         border-radius: 999px;
         margin-bottom: 16px;
     }
 
+    .auth-badge-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: currentColor;
+        opacity: 0.85;
+    }
+
     .auth-title {
-        font-size: 30px;
-        font-weight: bold;
-        color: #111827;
-        margin-bottom: 8px;
+        margin: 0 0 10px;
+        font-size: clamp(1.9rem, 3vw, 2.2rem);
+        line-height: 1.1;
+        font-weight: 800;
+        color: var(--text);
+        letter-spacing: -0.02em;
     }
 
     .auth-subtitle {
-        font-size: 14px;
-        color: #6b7280;
-        margin-bottom: 28px;
+        margin: 0;
+        font-size: 0.98rem;
+        line-height: 1.6;
+        color: var(--text-muted);
+    }
+
+    .error-message {
+        margin-bottom: 18px;
+        padding: 13px 14px;
+        border-radius: 14px;
+        background: var(--error-bg);
+        color: var(--error-text);
+        border: 1px solid var(--error-border);
+        text-align: left;
+        font-size: 0.95rem;
         line-height: 1.5;
     }
 
+    .auth-form {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+
     .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
         text-align: left;
-        margin-bottom: 18px;
     }
 
     .form-group label {
-        font-size: 14px;
-        font-weight: 600;
-        color: #374151;
-        display: block;
-        margin-bottom: 8px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-soft);
     }
 
-    .form-group input {
+    .input-wrap {
+        position: relative;
+    }
+
+    .form-input {
         width: 100%;
-        padding: 12px 14px;
-        border-radius: 10px;
-        border: 1px solid #d1d5db;
-        box-sizing: border-box;
-        font-size: 14px;
-        background: #ffffff;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        min-height: 48px;
+        padding: 13px 14px;
+        border-radius: 14px;
+        border: 1px solid var(--border-strong);
+        background: var(--surface-solid);
+        color: var(--text);
+        font-size: 0.95rem;
+        line-height: 1.4;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
     }
 
-    .form-group input:focus {
+    .form-input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .form-input:hover {
+        border-color: #9ca3af;
+    }
+
+    .form-input:focus {
         outline: none;
-        border-color: #60a5fa;
+        border-color: var(--primary);
         box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.18);
     }
 
-    .password-note {
+    .form-help {
+        padding: 14px 15px;
+        border-radius: 14px;
+        background: var(--surface-muted);
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        line-height: 1.65;
         text-align: left;
-        font-size: 12px;
-        line-height: 1.6;
-        color: #6b7280;
-        background: #f8fafc;
-        border: 1px solid #e5e7eb;
-        padding: 12px 14px;
-        border-radius: 10px;
-        margin-top: -4px;
-        margin-bottom: 18px;
+    }
+
+    .form-help strong {
+        color: var(--text-soft);
     }
 
     .btn {
         width: 100%;
-        padding: 12px;
+        min-height: 50px;
         border: none;
-        border-radius: 10px;
-        background: linear-gradient(135deg, #4facfe, #2563eb);
-        color: white;
-        font-weight: bold;
-        font-size: 15px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #60a5fa, var(--primary));
+        color: #ffffff;
+        font-size: 1rem;
+        font-weight: 800;
+        letter-spacing: 0.01em;
         cursor: pointer;
+        box-shadow: 0 12px 24px rgba(37, 99, 235, 0.24);
         transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-        box-shadow: 0 10px 20px rgba(37, 99, 235, 0.25);
     }
 
     .btn:hover {
         transform: translateY(-1px);
-        opacity: 0.97;
+        box-shadow: 0 16px 28px rgba(37, 99, 235, 0.28);
     }
 
     .btn:active {
         transform: translateY(0);
     }
 
+    .btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .auth-divider {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 6px 0 2px;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+    }
+
     .auth-footer {
-        margin-top: 20px;
-        font-size: 14px;
-        color: #6b7280;
+        margin-top: 8px;
+        text-align: center;
+        font-size: 0.96rem;
+        color: var(--text-muted);
+        line-height: 1.6;
     }
 
     .auth-footer a {
-        color: #2563eb;
+        color: var(--primary);
+        font-weight: 700;
         text-decoration: none;
-        font-weight: 600;
     }
 
     .auth-footer a:hover {
         text-decoration: underline;
     }
 
-    .error-message {
-        background: #fef2f2;
-        color: #b91c1c;
-        border: 1px solid #fecaca;
-        padding: 12px 14px;
-        border-radius: 10px;
-        margin-bottom: 18px;
-        font-size: 14px;
-        text-align: left;
+    @media (prefers-color-scheme: dark) {
+        .auth-card {
+            background: linear-gradient(180deg, rgba(17, 24, 39, 0.92), rgba(17, 24, 39, 0.84));
+        }
+
+        .form-input {
+            background: rgba(15, 23, 42, 0.88);
+        }
+
+        .form-input:hover {
+            border-color: rgba(255, 255, 255, 0.24);
+        }
+
+        .auth-card::before {
+            background: linear-gradient(90deg, #60a5fa, #3b82f6, #93c5fd);
+        }
     }
 
-    @media (max-width: 520px) {
-        .auth-container {
+    @media (max-width: 560px) {
+        .auth-page {
+            min-height: auto;
+        }
+
+        .auth-card {
             padding: 24px 18px;
-            border-radius: 14px;
+            border-radius: 20px;
+        }
+
+        .auth-header {
+            margin-bottom: 22px;
         }
 
         .auth-title {
-            font-size: 26px;
+            font-size: 1.8rem;
         }
     }
 </style>
+{% endblock %}
 
+{% block content %}
 <div class="auth-page">
-    <div class="auth-container">
-        <div class="auth-badge">New Account</div>
-        <div class="auth-title">Create Account</div>
-        <div class="auth-subtitle">Register to start using your app and access your personal feed.</div>
+    <section class="auth-card" aria-labelledby="register-title">
+        <div class="auth-header">
+            <div class="auth-badge">
+                <span class="auth-badge-dot" aria-hidden="true"></span>
+                New Account
+            </div>
+
+            <h1 id="register-title" class="auth-title">Create your account</h1>
+            <p class="auth-subtitle">
+                Sign up to start using your app and access your personal feed.
+            </p>
+        </div>
 
         {% if error %}
-            <div class="error-message">{{ error }}</div>
+            <div class="error-message" role="alert" aria-live="polite">
+                {{ error }}
+            </div>
         {% endif %}
 
-        <form method="POST" action="{{ url_for('register') }}">
+        <form method="POST" action="{{ url_for('register') }}" class="auth-form" novalidate>
             <div class="form-group">
                 <label for="username">Username</label>
-                <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    value="{{ request.form.get('username', '') }}"
-                    required
-                    maxlength="30"
-                    autocomplete="username"
-                    pattern="[a-zA-Z0-9_]{3,30}"
-                    title="Username must be 3 to 30 characters and contain only letters, numbers, and underscores"
-                    placeholder="Choose a username"
-                >
+                <div class="input-wrap">
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        class="form-input"
+                        value="{{ request.form.get('username', '') }}"
+                        required
+                        maxlength="30"
+                        autocomplete="username"
+                        pattern="[a-zA-Z0-9_]{3,30}"
+                        title="Username must be 3 to 30 characters and contain only letters, numbers, and underscores"
+                        placeholder="Choose a username"
+                        aria-describedby="register-help"
+                    >
+                </div>
             </div>
 
             <div class="form-group">
                 <label for="password">Password</label>
-                <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    required
-                    minlength="8"
-                    autocomplete="new-password"
-                    placeholder="Create a password"
-                >
+                <div class="input-wrap">
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        class="form-input"
+                        required
+                        minlength="8"
+                        autocomplete="new-password"
+                        placeholder="Create a password"
+                        aria-describedby="register-help"
+                    >
+                </div>
             </div>
 
-            <div class="password-note">
-                Username: 3–30 letters, numbers, or underscores.<br>
-                Password must be at least 8 characters.
+            <div id="register-help" class="form-help">
+                <strong>Username:</strong> 3–30 letters, numbers, or underscores.<br>
+                <strong>Password:</strong> Must be at least 8 characters long.
             </div>
 
-            <button type="submit" class="btn">Register</button>
+            <button type="submit" class="btn">Create account</button>
+
+            <div class="auth-divider">Already registered?</div>
+
+            <div class="auth-footer">
+                Already have an account?
+                <a href="{{ url_for('login') }}">Login</a>
+            </div>
         </form>
-
-        <div class="auth-footer">
-            Already have an account?
-            <a href="{{ url_for('login') }}">Login</a>
-        </div>
-    </div>
+    </section>
 </div>
-
 {% endblock %}
