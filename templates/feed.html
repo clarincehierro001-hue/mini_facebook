@@ -138,6 +138,7 @@
         line-height: 1.45;
         box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
         word-break: break-word;
+        white-space: pre-wrap;
     }
 
     .incoming .bubble {
@@ -898,7 +899,7 @@
                                     data-reaction="like"
                                     onclick="reactToPost({{ post.id }}, 'like')"
                                 >
-                                    👍 Like (<span class="count-like">{{ post.reactions['like'] if post.reactions else 0 }}</span>)
+                                    👍 Like (<span class="count-like">{{ post.reactions.get('like', 0) if post.reactions else 0 }}</span>)
                                 </button>
 
                                 <button
@@ -908,7 +909,7 @@
                                     data-reaction="love"
                                     onclick="reactToPost({{ post.id }}, 'love')"
                                 >
-                                    ❤️ Love (<span class="count-love">{{ post.reactions['love'] if post.reactions else 0 }}</span>)
+                                    ❤️ Love (<span class="count-love">{{ post.reactions.get('love', 0) if post.reactions else 0 }}</span>)
                                 </button>
 
                                 <button
@@ -918,7 +919,7 @@
                                     data-reaction="laugh"
                                     onclick="reactToPost({{ post.id }}, 'laugh')"
                                 >
-                                    😂 Laugh (<span class="count-laugh">{{ post.reactions['laugh'] if post.reactions else 0 }}</span>)
+                                    😂 Laugh (<span class="count-laugh">{{ post.reactions.get('laugh', 0) if post.reactions else 0 }}</span>)
                                 </button>
                             </div>
                         </article>
@@ -944,6 +945,7 @@
 <script>
     window.isSubmittingPost = false;
     window.feedPollStarted = window.feedPollStarted || false;
+    window.chatPollStarted = window.chatPollStarted || false;
 
     const MAX_VISIBLE_POSTS = 20;
     const POLL_INTERVAL_MS = 3000;
@@ -952,6 +954,7 @@
 
     let lastPostIds = new Set();
     let pollTimer = null;
+    let chatPollTimer = null;
 
     function escapeHtml(text) {
         const div = document.createElement("div");
@@ -1412,6 +1415,43 @@
         });
     }
 
+    function renderChatMessages(messagesData) {
+        const messages = document.getElementById("chatMessages");
+        if (!messages) return;
+
+        messages.innerHTML = (messagesData || []).map(msg => {
+            const mine = isCurrentUserPost(msg.user);
+            return `
+                <div class="chat-message ${mine ? "outgoing" : "incoming"}">
+                    <div class="bubble">${escapeHtml(msg.content || "")}</div>
+                </div>
+            `;
+        }).join("");
+
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    async function loadChatMessages() {
+        try {
+            const data = await fetchJson("/chat/messages", {
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            });
+            renderChatMessages(data);
+        } catch (error) {
+            console.error("Failed to load chat messages:", error);
+        }
+    }
+
+    function initChatPolling() {
+        if (window.chatPollStarted) return;
+
+        window.chatPollStarted = true;
+        loadChatMessages();
+        chatPollTimer = setInterval(loadChatMessages, POLL_INTERVAL_MS);
+    }
+
     function openChatbox() {
         const panel = document.getElementById("chatboxPanel");
         const overlay = document.getElementById("chatboxOverlay");
@@ -1428,10 +1468,7 @@
             if (input) input.focus();
         }, 200);
 
-        const messages = document.getElementById("chatMessages");
-        if (messages) {
-            messages.scrollTop = messages.scrollHeight;
-        }
+        loadChatMessages();
     }
 
     function closeChatbox() {
@@ -1446,37 +1483,55 @@
         panel.setAttribute("aria-hidden", "true");
     }
 
-    function sendChatMessage(event) {
+    async function sendChatMessage(event) {
         event.preventDefault();
 
         const input = document.getElementById("chatInput");
-        const messages = document.getElementById("chatMessages");
-
-        if (!input || !messages) return;
+        if (!input) return;
 
         const message = input.value.trim();
         if (!message) return;
 
-        const wrapper = document.createElement("div");
-        wrapper.className = "chat-message outgoing";
+        try {
+            const body = new URLSearchParams({
+                content: message,
+                csrf_token: csrfToken
+            });
 
-        const bubble = document.createElement("div");
-        bubble.className = "bubble";
-        bubble.textContent = message;
+            const response = await fetch("/chat/send", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                    "X-CSRFToken": csrfToken,
+                    "X-Requested-With": "XMLHttpRequest"
+                },
+                body: body.toString()
+            });
 
-        wrapper.appendChild(bubble);
-        messages.appendChild(wrapper);
+            if (!response.ok) {
+                throw new Error("Failed to send chat");
+            }
 
-        messages.scrollTop = messages.scrollHeight;
-        input.value = "";
+            input.value = "";
+            await loadChatMessages();
+        } catch (error) {
+            alert("Failed to send chat message.");
+        }
     }
 
     document.addEventListener("DOMContentLoaded", function() {
         initSearch();
         initComposer();
         initPolling();
+        initChatPolling();
 
+        const chatForm = document.getElementById("chatboxForm");
         const input = document.getElementById("chatInput");
+
+        if (chatForm) {
+            chatForm.addEventListener("submit", sendChatMessage);
+        }
+
         if (input) {
             input.addEventListener("keydown", function(e) {
                 if (e.key === "Enter" && !e.shiftKey) {
