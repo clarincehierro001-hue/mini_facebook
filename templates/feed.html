@@ -1482,69 +1482,71 @@
         panel.setAttribute("aria-hidden", "true");
     }
 
-    async function sendChatMessage(event) {
-        event.preventDefault();
+    let isSendingChat = false; // ✅ add this ABOVE the function
 
-        const input = document.getElementById("chatInput");
-        if (!input) return;
+	async function sendChatMessage(event) {
+		event.preventDefault();
 
-        const message = input.value.trim();
-        if (!message) return;
+		// 🚫 STOP if already sending
+		if (isSendingChat) return;
+		isSendingChat = true;
 
-        try {
-            const body = new URLSearchParams({
-                content: message,
-                csrf_token: csrfToken
-            });
+		console.log("SEND TRIGGERED"); // 🧪 debug (you’ll use this later)
 
-            const response = await fetch("/chat/send", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-                    "X-CSRFToken": csrfToken,
-                    "X-Requested-With": "XMLHttpRequest"
-                },
-                body: body.toString()
-            });
+		const input = document.getElementById("chatInput");
+		if (!input) {
+			isSendingChat = false;
+			return;
+		}
 
-            if (!response.ok) {
-                throw new Error("Failed to send chat");
-            }
+		const message = input.value.trim();
+		if (!message) {
+			isSendingChat = false;
+			return;
+		}
 
-            input.value = "";
-            await loadChatMessages();
-        } catch (error) {
-            alert("Failed to send chat message.");
-        }
-    }
+		try {
+			const body = new URLSearchParams({
+				content: message,
+				csrf_token: csrfToken
+			});
 
-    document.addEventListener("DOMContentLoaded", function() {
-        initSearch();
-        initComposer();
-        initPolling();
-        initChatPolling();
+			const response = await fetch("/chat/send", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+					"X-CSRFToken": csrfToken,
+					"X-Requested-With": "XMLHttpRequest"
+				},
+				body: body.toString()
+			});
 
-        const chatForm = document.getElementById("chatboxForm");
-        const input = document.getElementById("chatInput");
+			if (!response.ok) throw new Error();
 
-        if (chatForm) {
-            chatForm.addEventListener("submit", sendChatMessage);
-        }
+			input.value = "";
+			await loadChatMessages();
+		} catch (error) {
+			alert("Failed to send chat message.");
+		} finally {
+			isSendingChat = false; // ✅ ALWAYS reset
+		}
+	}
 
-        if (input) {
-            input.addEventListener("keydown", function(e) {
-                if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    sendChatMessage(e);
-                }
-            });
-        }
-    });
+	if (!window.chatInitialized) {
+		window.chatInitialized = true;
 
-    document.addEventListener("keydown", function(event) {
-        if (event.key === "Escape") {
-            closeChatbox();
-        }
-    });
+		initSearch();
+		initComposer();
+		initPolling();
+		initChatPolling();
+
+		const chatForm = document.getElementById("chatboxForm");
+
+		if (chatForm) {
+			chatForm.removeEventListener("submit", sendChatMessage); // 🧹 cleanup
+			chatForm.addEventListener("submit", sendChatMessage);
+		}
+	}
+		
 </script>
 {% endblock %}
