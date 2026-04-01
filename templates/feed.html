@@ -2,90 +2,218 @@
 
 {% block title %}Feed{% endblock %}
 
-{% block content %}
-
+{% block head %}
 <style>
+    .feed-shell {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 6px 0 18px;
+    }
+
     .feed-wrapper {
-        max-width: 760px;
+        max-width: 880px;
         margin: 0 auto;
     }
 
     .top-bar {
         display: flex;
         justify-content: space-between;
-        align-items: end;
+        align-items: flex-end;
+        gap: 16px;
         margin-bottom: 22px;
-        gap: 12px;
         flex-wrap: wrap;
     }
 
     .feed-title {
-        font-size: 32px;
-        font-weight: 700;
-        color: #111827;
-        margin-bottom: 6px;
-        line-height: 1.1;
+        margin: 0 0 8px;
+        font-size: clamp(2rem, 4vw, 2.6rem);
+        line-height: 1.04;
+        font-weight: 900;
+        letter-spacing: -0.03em;
+        color: var(--text);
     }
 
     .feed-subtitle {
-        color: #6b7280;
-        font-size: 14px;
-        line-height: 1.5;
+        margin: 0;
+        max-width: 640px;
+        color: var(--text-muted);
+        font-size: 0.96rem;
+        line-height: 1.7;
     }
 
+    .feed-subtitle strong {
+        color: var(--text);
+        font-weight: 800;
+    }
+
+    .feed-meta {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        color: var(--text-soft);
+        font-size: 0.82rem;
+        font-weight: 700;
+        box-shadow: var(--shadow-sm);
+        backdrop-filter: blur(12px);
+        white-space: nowrap;
+    }
+
+    .search-bar-card,
     .post-form-card,
-    .post-card,
-    .empty-state {
-        background: rgba(255, 255, 255, 0.97);
-        border: 1px solid #e5e7eb;
-        border-radius: 18px;
-        box-shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
+    .empty-state,
+    .no-search-results {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        box-shadow: var(--shadow-md);
+        backdrop-filter: blur(14px);
+    }
+
+    .search-bar-card {
+        position: relative;
+        padding: 14px 16px;
+        margin-bottom: 18px;
+    }
+
+    .search-bar-wrap {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .search-icon {
+        flex-shrink: 0;
+        font-size: 1rem;
+        color: var(--text-muted);
+        opacity: 0.9;
+    }
+
+    .search-input {
+        width: 100%;
+        border: none;
+        outline: none;
+        background: transparent;
+        color: var(--text);
+        font-size: 0.95rem;
+        line-height: 1.4;
+        font-family: inherit;
+    }
+
+    .search-input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .user-search-results {
+        display: none;
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border);
+    }
+
+    .user-result-item,
+    .user-result-empty {
+        padding: 11px 12px;
+        border-radius: 12px;
+        font-size: 0.94rem;
+    }
+
+    .user-result-item {
+        cursor: pointer;
+        color: var(--text);
+        transition: background-color 0.2s ease, transform 0.16s ease;
+    }
+
+    .user-result-item:hover {
+        background: var(--primary-soft);
+        transform: translateX(2px);
+    }
+
+    .user-result-empty {
+        color: var(--text-muted);
+    }
+
+    .error-message {
+        margin-bottom: 18px;
+        padding: 13px 14px;
+        border-radius: 14px;
+        background: var(--error-bg);
+        color: var(--error-text);
+        border: 1px solid var(--error-border);
+        font-size: 0.95rem;
+        line-height: 1.55;
     }
 
     .post-form-card {
-        padding: 22px;
-        margin-bottom: 22px;
+        padding: 24px;
+        margin-bottom: 24px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .post-form-card::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 4px;
+        background: linear-gradient(90deg, #60a5fa, var(--primary), #93c5fd);
     }
 
     .composer-header {
         display: flex;
-        align-items: center;
         justify-content: space-between;
+        align-items: flex-start;
         gap: 12px;
-        margin-bottom: 14px;
+        margin-bottom: 16px;
         flex-wrap: wrap;
     }
 
     .composer-title {
-        font-size: 18px;
-        font-weight: 700;
-        color: #1f2937;
+        margin: 0 0 4px;
+        font-size: 1.18rem;
+        font-weight: 800;
+        color: var(--text);
+        letter-spacing: -0.02em;
     }
 
     .composer-hint {
-        font-size: 13px;
-        color: #6b7280;
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        line-height: 1.6;
     }
 
     .post-form textarea {
         width: 100%;
-        min-height: 120px;
-        padding: 14px 15px;
-        border: 1px solid #d1d5db;
-        border-radius: 14px;
+        min-height: 128px;
+        padding: 15px 16px;
         resize: vertical;
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-        line-height: 1.5;
         box-sizing: border-box;
-        margin-bottom: 12px;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        background: #fff;
+        border: 1px solid var(--border-strong);
+        border-radius: 16px;
+        background: var(--surface-solid);
+        color: var(--text);
+        font-size: 0.95rem;
+        line-height: 1.7;
+        font-family: inherit;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+        margin-bottom: 14px;
+    }
+
+    .post-form textarea::placeholder {
+        color: var(--text-muted);
+    }
+
+    .post-form textarea:hover {
+        border-color: #9ca3af;
     }
 
     .post-form textarea:focus {
         outline: none;
-        border-color: #60a5fa;
+        border-color: var(--primary);
         box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.18);
     }
 
@@ -97,71 +225,157 @@
         flex-wrap: wrap;
     }
 
+    .composer-tools {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
     .char-counter {
-        font-size: 13px;
-        color: #6b7280;
-    }
-
-    .post-form button {
-        background: linear-gradient(135deg, #4facfe, #2563eb);
-        color: white;
-        border: none;
-        padding: 11px 20px;
-        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.84rem;
+        color: var(--text-muted);
         font-weight: 700;
+        background: var(--surface-muted);
+        border: 1px solid var(--border);
+        padding: 8px 12px;
+        border-radius: 999px;
+    }
+
+    .char-counter.limit-near {
+        color: #b45309;
+        border-color: rgba(180, 83, 9, 0.2);
+    }
+
+    .char-counter.limit-hit {
+        color: var(--error-text);
+        border-color: rgba(185, 28, 28, 0.2);
+    }
+
+    .post-submit-btn {
+        border: none;
+        border-radius: 14px;
+        padding: 11px 22px;
+        min-height: 46px;
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: white;
         cursor: pointer;
-        transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-        box-shadow: 0 10px 20px rgba(37, 99, 235, 0.22);
+        background: linear-gradient(135deg, #60a5fa, var(--primary));
+        box-shadow: 0 12px 24px rgba(37, 99, 235, 0.24);
+        transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
     }
 
-    .post-form button:hover {
+    .post-submit-btn:hover {
         transform: translateY(-1px);
-        opacity: 0.97;
+        box-shadow: 0 16px 28px rgba(37, 99, 235, 0.28);
     }
 
-    .post-form button:active {
+    .post-submit-btn:active {
         transform: translateY(0);
     }
 
-    .post-form button:disabled {
+    .post-submit-btn:disabled {
         opacity: 0.65;
         cursor: not-allowed;
-        transform: none;
         box-shadow: none;
+        transform: none;
+    }
+
+    .feed-stats {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+    }
+
+    .feed-stats-text {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        font-weight: 700;
+        letter-spacing: 0.01em;
+    }
+
+    #posts-container {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .chat-row {
+        display: flex;
+        width: 100%;
+    }
+
+    .chat-row.other-user {
+        justify-content: flex-start;
+    }
+
+    .chat-row.current-user {
+        justify-content: flex-end;
     }
 
     .post-card {
-        padding: 20px;
-        margin-bottom: 18px;
-        transition: transform 0.18s ease, box-shadow 0.18s ease;
+        width: fit-content;
+        max-width: 78%;
+        padding: 14px 16px 12px;
+        border-radius: 22px;
+        position: relative;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-md);
+        word-break: break-word;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        overflow: hidden;
     }
 
     .post-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 18px 38px rgba(15, 23, 42, 0.10);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .chat-row.other-user .post-card {
+        background: var(--surface-solid);
+        color: var(--text);
+        border-top-left-radius: 8px;
+    }
+
+    .chat-row.current-user .post-card {
+        background: linear-gradient(135deg, rgba(239, 246, 255, 1), rgba(219, 234, 254, 1));
+        color: #0f172a;
+        border-color: #bfdbfe;
+        border-top-right-radius: 8px;
     }
 
     .post-card.new-post {
         border-color: #93c5fd;
-        box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.25), 0 14px 35px rgba(15, 23, 42, 0.08);
-        animation: fadeHighlight 2s ease forwards;
+        box-shadow:
+            0 0 0 3px rgba(147, 197, 253, 0.22),
+            0 16px 35px rgba(15, 23, 42, 0.08);
+        animation: fadeHighlight 1.4s ease;
     }
 
     @keyframes fadeHighlight {
         0% {
-            background: #eff6ff;
+            transform: scale(0.985);
+            opacity: 0.88;
         }
         100% {
-            background: rgba(255, 255, 255, 0.97);
+            transform: scale(1);
+            opacity: 1;
         }
     }
 
     .post-header {
         display: flex;
         justify-content: space-between;
-        align-items: center;
-        margin-bottom: 14px;
-        gap: 12px;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 10px;
     }
 
     .post-author-wrap {
@@ -174,232 +388,357 @@
     .post-avatar {
         width: 40px;
         height: 40px;
+        flex-shrink: 0;
         border-radius: 50%;
-        background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-        color: #1d4ed8;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-weight: 700;
-        font-size: 14px;
-        flex-shrink: 0;
+        background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+        color: #1d4ed8;
+        border: 1px solid rgba(37, 99, 235, 0.12);
+        font-weight: 800;
+        font-size: 0.9rem;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
     }
 
     .post-author {
-        font-weight: 700;
-        color: #1f2937;
-        font-size: 15px;
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: var(--text);
+        margin-bottom: 4px;
         word-break: break-word;
     }
 
-    .post-meta {
-        font-size: 12px;
-        color: #9ca3af;
-        white-space: nowrap;
+    .post-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 9px;
+        border-radius: 999px;
+        background: rgba(37, 99, 235, 0.1);
+        color: #1d4ed8;
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
     }
 
     .post-content {
-        font-size: 15px;
-        color: #374151;
-        line-height: 1.7;
-        margin-bottom: 16px;
-        word-wrap: break-word;
+        font-size: 0.95rem;
+        line-height: 1.75;
+        color: #334155;
+        margin-bottom: 12px;
         white-space: pre-wrap;
+    }
+
+    .chat-row.current-user .post-content {
+        color: #1e293b;
     }
 
     .reactions {
         display: flex;
-        gap: 10px;
+        gap: 8px;
         flex-wrap: wrap;
     }
 
     .reaction-btn {
-        border: 1px solid #dbe3ee;
-        background: #f8fafc;
+        border: 1px solid var(--border);
+        background: rgba(248, 250, 252, 0.9);
         border-radius: 999px;
-        padding: 9px 14px;
+        padding: 8px 12px;
         cursor: pointer;
-        font-size: 14px;
+        font-size: 0.83rem;
+        font-weight: 600;
         color: #334155;
-        transition: 0.2s ease;
+        transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.16s ease;
     }
 
     .reaction-btn:hover {
-        background: #eff6ff;
+        background: var(--primary-soft);
         border-color: #60a5fa;
         color: #1d4ed8;
+        transform: translateY(-1px);
     }
 
     .reaction-btn.active {
         background: #e8f1ff;
         border-color: #60a5fa;
         color: #1d4ed8;
-        font-weight: 700;
+        font-weight: 800;
     }
 
     .empty-state {
-        padding: 36px 24px;
+        padding: 40px 24px;
         text-align: center;
-        color: #6b7280;
+        color: var(--text-muted);
+    }
+
+    .empty-state-icon {
+        font-size: 2rem;
+        margin-bottom: 10px;
     }
 
     .empty-state-title {
-        font-size: 20px;
-        font-weight: 700;
-        color: #1f2937;
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: var(--text);
         margin-bottom: 8px;
+        letter-spacing: -0.02em;
     }
 
     .empty-state-text {
-        font-size: 14px;
-        line-height: 1.6;
+        font-size: 0.95rem;
+        line-height: 1.7;
+        max-width: 460px;
+        margin: 0 auto;
     }
 
-    .error-message {
-        background: #fef2f2;
-        color: #b91c1c;
-        border: 1px solid #fecaca;
-        padding: 12px 14px;
-        border-radius: 12px;
-        margin-bottom: 16px;
-        font-size: 14px;
+    .hidden-post {
+        display: none !important;
+    }
+
+    .no-search-results {
+        display: none;
+        text-align: center;
+        padding: 18px;
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        margin-top: 14px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .chat-row.current-user .post-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.96), rgba(37, 99, 235, 0.18));
+            color: var(--text);
+            border-color: rgba(96, 165, 250, 0.24);
+        }
+
+        .post-avatar {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.24), rgba(147, 197, 253, 0.18));
+            color: #93c5fd;
+            border-color: rgba(147, 197, 253, 0.16);
+        }
+
+        .post-content,
+        .chat-row.current-user .post-content {
+            color: var(--text-soft);
+        }
+
+        .reaction-btn {
+            background: rgba(15, 23, 42, 0.78);
+            color: var(--text-soft);
+        }
+
+        .reaction-btn:hover,
+        .reaction-btn.active {
+            background: rgba(96, 165, 250, 0.12);
+        }
     }
 
     @media (max-width: 640px) {
-        .feed-title {
-            font-size: 28px;
-        }
-
+        .search-bar-card,
         .post-form-card,
-        .post-card,
-        .empty-state {
-            border-radius: 14px;
+        .empty-state,
+        .no-search-results {
+            border-radius: 18px;
         }
 
-        .post-form-card,
-        .post-card {
-            padding: 16px;
-        }
-
-        .post-header {
-            align-items: flex-start;
+        .post-form-card {
+            padding: 18px;
         }
 
         .composer-footer {
             align-items: stretch;
         }
 
-        .post-form button {
+        .composer-tools {
+            justify-content: space-between;
             width: 100%;
+        }
+
+        .post-submit-btn {
+            width: 100%;
+        }
+
+        .post-card {
+            max-width: 94%;
+            padding: 13px 14px 12px;
+        }
+
+        .feed-meta {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .top-bar {
+            margin-bottom: 18px;
         }
     }
 </style>
+{% endblock %}
 
-<div class="feed-wrapper">
-    <div class="top-bar">
-        <div>
-            <div class="feed-title">Feed</div>
-            <div class="feed-subtitle">
-                Welcome, {{ current_user.username }}. Share something with everyone.
+{% block content %}
+<div class="feed-shell">
+    <div class="feed-wrapper">
+        <div class="top-bar">
+            <div>
+                <h1 class="feed-title">Feed</h1>
+                <p class="feed-subtitle">
+                    Welcome, <strong>{{ current_user.username }}</strong>. Share updates, react to posts, and connect with other users.
+                </p>
+            </div>
+
+            <div class="feed-meta">
+                <span>✨ Live updates</span>
             </div>
         </div>
-    </div>
 
-    {% if error %}
-        <div class="error-message">{{ error }}</div>
-    {% endif %}
-
-    <div class="post-form-card">
-        <div class="composer-header">
-            <div class="composer-title">Create a post</div>
-            <div class="composer-hint">Keep it short, clear, and friendly.</div>
+        <div class="search-bar-card" aria-label="Search posts and users">
+            <div class="search-bar-wrap">
+                <div class="search-icon" aria-hidden="true">🔎</div>
+                <input
+                    type="text"
+                    id="user-search"
+                    class="search-input"
+                    placeholder="Search by username or message..."
+                    autocomplete="off"
+                    aria-label="Search by username or message"
+                >
+            </div>
+            <div id="user-search-results" class="user-search-results" role="listbox"></div>
         </div>
 
-        <form method="POST" action="{{ url_for('feed') }}" class="post-form" id="post-form">
-            <textarea
-                id="post-content"
-                name="content"
-                maxlength="200"
-                placeholder="What's on your mind?"
-                required
-            ></textarea>
+        {% if error %}
+            <div class="error-message" role="alert">{{ error }}</div>
+        {% endif %}
 
-            <div class="composer-footer">
-                <div class="char-counter">
-                    <span id="char-count">0</span>/200
+        <div class="post-form-card">
+            <div class="composer-header">
+                <div>
+                    <h2 class="composer-title">Create a post</h2>
+                    <p class="composer-hint">Share a short message with everyone in the feed.</p>
                 </div>
-                <button type="submit" id="post-submit-btn">Post</button>
             </div>
-        </form>
-    </div>
 
-    <div id="posts-container">
-        {% if posts %}
-            {% for post in posts %}
-                <div class="post-card">
-                    <div class="post-header">
-                        <div class="post-author-wrap">
-                            <div class="post-avatar">
-                                {{ (post.user[:1] if post.user else "?")|upper }}
-                            </div>
-                            <div>
-                                <div class="post-author">@{{ post.user }}</div>
-                            </div>
+            <form method="POST" action="{{ url_for('feed') }}" class="post-form" id="post-form">
+                <textarea
+                    id="post-content"
+                    name="content"
+                    maxlength="200"
+                    placeholder="Write your message here..."
+                    required
+                    aria-label="Post content"
+                ></textarea>
+
+                <div class="composer-footer">
+                    <div class="composer-tools">
+                        <div class="char-counter" id="char-counter">
+                            <span id="char-count">0</span>/200
                         </div>
                     </div>
+                    <button type="submit" id="post-submit-btn" class="post-submit-btn">Post</button>
+                </div>
+            </form>
+        </div>
 
-                    <div class="post-content">{{ post.content }}</div>
+        <div class="feed-stats">
+            <div class="feed-stats-text">
+                Showing latest posts
+            </div>
+        </div>
 
-                    <div class="reactions">
-                        <button
-                            type="button"
-                            class="reaction-btn"
-                            data-post-id="{{ post.id }}"
-                            data-reaction="like"
-                            onclick="reactToPost({{ post.id }}, 'like')"
-                        >
-                            👍 Like (<span class="count-like">{{ post.reactions['like'] if post.reactions else 0 }}</span>)
-                        </button>
+        <div id="posts-container" aria-live="polite">
+            {% if posts %}
+                {% for post in posts %}
+                    <div
+                        class="chat-row {% if post.user == current_user.username %}current-user{% else %}other-user{% endif %}"
+                        data-user="{{ (post.user or '')|lower }}"
+                        data-content="{{ (post.content or '')|lower }}"
+                        data-post-id="{{ post.id }}"
+                    >
+                        <article class="post-card">
+                            <div class="post-header">
+                                <div class="post-author-wrap">
+                                    <div class="post-avatar">
+                                        {{ (post.user[:1] if post.user else "?")|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="post-author">@{{ post.user }}</div>
+                                        <span class="post-badge">
+                                            {% if post.user == current_user.username %}
+                                                You
+                                            {% else %}
+                                                User
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
 
-                        <button
-                            type="button"
-                            class="reaction-btn"
-                            data-post-id="{{ post.id }}"
-                            data-reaction="love"
-                            onclick="reactToPost({{ post.id }}, 'love')"
-                        >
-                            ❤️ Love (<span class="count-love">{{ post.reactions['love'] if post.reactions else 0 }}</span>)
-                        </button>
+                            <div class="post-content">{{ post.content }}</div>
 
-                        <button
-                            type="button"
-                            class="reaction-btn"
-                            data-post-id="{{ post.id }}"
-                            data-reaction="laugh"
-                            onclick="reactToPost({{ post.id }}, 'laugh')"
-                        >
-                            😂 Laugh (<span class="count-laugh">{{ post.reactions['laugh'] if post.reactions else 0 }}</span>)
-                        </button>
+                            <div class="reactions">
+                                <button
+                                    type="button"
+                                    class="reaction-btn"
+                                    data-post-id="{{ post.id }}"
+                                    data-reaction="like"
+                                    onclick="reactToPost({{ post.id }}, 'like')"
+                                >
+                                    👍 Like (<span class="count-like">{{ post.reactions['like'] if post.reactions else 0 }}</span>)
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="reaction-btn"
+                                    data-post-id="{{ post.id }}"
+                                    data-reaction="love"
+                                    onclick="reactToPost({{ post.id }}, 'love')"
+                                >
+                                    ❤️ Love (<span class="count-love">{{ post.reactions['love'] if post.reactions else 0 }}</span>)
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="reaction-btn"
+                                    data-post-id="{{ post.id }}"
+                                    data-reaction="laugh"
+                                    onclick="reactToPost({{ post.id }}, 'laugh')"
+                                >
+                                    😂 Laugh (<span class="count-laugh">{{ post.reactions['laugh'] if post.reactions else 0 }}</span>)
+                                </button>
+                            </div>
+                        </article>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">💬</div>
+                    <div class="empty-state-title">No posts yet</div>
+                    <div class="empty-state-text">
+                        Be the first to post something and start the conversation.
                     </div>
                 </div>
-            {% endfor %}
-        {% else %}
-            <div class="empty-state">
-                <div class="empty-state-title">No posts yet</div>
-                <div class="empty-state-text">
-                    Be the first to post something and start the conversation.
-                </div>
-            </div>
-        {% endif %}
+            {% endif %}
+        </div>
+
+        <div id="no-search-results" class="no-search-results">
+            No users or messages matched your search.
+        </div>
     </div>
 </div>
 
 <script>
     window.isSubmittingPost = false;
+    window.feedPollStarted = window.feedPollStarted || false;
 
     const MAX_VISIBLE_POSTS = 20;
+    const POLL_INTERVAL_MS = 3000;
+    const currentUser = "{{ current_user.username|e }}";
+
     let lastPostIds = new Set();
-    const currentUser = "{{ current_user.username }}";
+    let pollTimer = null;
+    let searchDebounce = null;
 
     function escapeHtml(text) {
         const div = document.createElement("div");
@@ -407,9 +746,44 @@
         return div.innerHTML;
     }
 
+    function escapeAttribute(text) {
+        return String(text || "")
+            .replace(/&/g, "&amp;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+    }
+
     function getAvatarLetter(username) {
         if (!username || !username.trim()) return "?";
         return username.trim().charAt(0).toUpperCase();
+    }
+
+    function isCurrentUserPost(username) {
+        return (username || "").trim().toLowerCase() === (currentUser || "").trim().toLowerCase();
+    }
+
+    function updateCharCount() {
+        const textarea = document.getElementById("post-content");
+        const charCount = document.getElementById("char-count");
+        const counterWrap = document.getElementById("char-counter");
+        const submitBtn = document.getElementById("post-submit-btn");
+
+        if (!textarea || !charCount || !counterWrap || !submitBtn) return;
+
+        const length = textarea.value.length;
+        charCount.textContent = length;
+
+        counterWrap.classList.remove("limit-near", "limit-hit");
+
+        if (length >= 200) {
+            counterWrap.classList.add("limit-hit");
+        } else if (length >= 160) {
+            counterWrap.classList.add("limit-near");
+        }
+
+        submitBtn.disabled = !textarea.value.trim() || window.isSubmittingPost;
     }
 
     function updateReactionButtons(postId, reactions, selectedReaction = null) {
@@ -438,20 +812,17 @@
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({
-                    reaction: reactionType
-                })
+                body: JSON.stringify({ reaction: reactionType })
             });
 
             const data = await response.json();
 
             if (!data.success) {
-                alert(data.error || "Failed to react");
+                alert(data.error || "Failed to react.");
                 return;
             }
 
             let selectedReaction = null;
-
             if (data.action === "added" || data.action === "updated") {
                 selectedReaction = reactionType;
             }
@@ -465,49 +836,76 @@
     }
 
     function createPostHtml(post, isNew = false) {
+        const mine = isCurrentUserPost(post.user);
+        const safeUsername = escapeHtml(post.user || "");
+        const safeContent = escapeHtml(post.content || "");
+
         return `
-            <div class="post-card ${isNew ? 'new-post' : ''}">
-                <div class="post-header">
-                    <div class="post-author-wrap">
-                        <div class="post-avatar">${getAvatarLetter(post.user)}</div>
-                        <div>
-                            <div class="post-author">@${escapeHtml(post.user)}</div>
+            <div
+                class="chat-row ${mine ? "current-user" : "other-user"}"
+                data-user="${escapeAttribute((post.user || "").toLowerCase())}"
+                data-content="${escapeAttribute((post.content || "").toLowerCase())}"
+                data-post-id="${post.id}"
+            >
+                <article class="post-card ${isNew ? "new-post" : ""}">
+                    <div class="post-header">
+                        <div class="post-author-wrap">
+                            <div class="post-avatar">${getAvatarLetter(post.user)}</div>
+                            <div>
+                                <div class="post-author">@${safeUsername}</div>
+                                <span class="post-badge">${mine ? "You" : "User"}</span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="post-content">${escapeHtml(post.content)}</div>
+                    <div class="post-content">${safeContent}</div>
 
-                <div class="reactions">
-                    <button
-                        type="button"
-                        class="reaction-btn"
-                        data-post-id="${post.id}"
-                        data-reaction="like"
-                        onclick="reactToPost(${post.id}, 'like')"
-                    >
-                        👍 Like (<span class="count-like">${post.reactions?.like ?? 0}</span>)
-                    </button>
+                    <div class="reactions">
+                        <button
+                            type="button"
+                            class="reaction-btn"
+                            data-post-id="${post.id}"
+                            data-reaction="like"
+                            onclick="reactToPost(${post.id}, 'like')"
+                        >
+                            👍 Like (<span class="count-like">${post.reactions?.like ?? 0}</span>)
+                        </button>
 
-                    <button
-                        type="button"
-                        class="reaction-btn"
-                        data-post-id="${post.id}"
-                        data-reaction="love"
-                        onclick="reactToPost(${post.id}, 'love')"
-                    >
-                        ❤️ Love (<span class="count-love">${post.reactions?.love ?? 0}</span>)
-                    </button>
+                        <button
+                            type="button"
+                            class="reaction-btn"
+                            data-post-id="${post.id}"
+                            data-reaction="love"
+                            onclick="reactToPost(${post.id}, 'love')"
+                        >
+                            ❤️ Love (<span class="count-love">${post.reactions?.love ?? 0}</span>)
+                        </button>
 
-                    <button
-                        type="button"
-                        class="reaction-btn"
-                        data-post-id="${post.id}"
-                        data-reaction="laugh"
-                        onclick="reactToPost(${post.id}, 'laugh')"
-                    >
-                        😂 Laugh (<span class="count-laugh">${post.reactions?.laugh ?? 0}</span>)
-                    </button>
+                        <button
+                            type="button"
+                            class="reaction-btn"
+                            data-post-id="${post.id}"
+                            data-reaction="laugh"
+                            onclick="reactToPost(${post.id}, 'laugh')"
+                        >
+                            😂 Laugh (<span class="count-laugh">${post.reactions?.laugh ?? 0}</span>)
+                        </button>
+                    </div>
+                </article>
+            </div>
+        `;
+    }
+
+    function renderEmptyState() {
+        const container = document.getElementById("posts-container");
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">💬</div>
+                <div class="empty-state-title">No posts yet</div>
+                <div class="empty-state-text">
+                    Be the first to post something and start the conversation.
                 </div>
             </div>
         `;
@@ -518,15 +916,9 @@
         if (!container) return;
 
         if (!posts || posts.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-title">No posts yet</div>
-                    <div class="empty-state-text">
-                        Be the first to post something and start the conversation.
-                    </div>
-                </div>
-            `;
+            renderEmptyState();
             lastPostIds = new Set();
+            applySearchFilter();
             return;
         }
 
@@ -539,6 +931,7 @@
         }).join("");
 
         lastPostIds = newIds;
+        applySearchFilter();
     }
 
     function prependPost(post) {
@@ -553,84 +946,211 @@
         container.insertAdjacentHTML("afterbegin", createPostHtml(post, true));
         lastPostIds.add(post.id);
 
-        const allPosts = container.querySelectorAll(".post-card");
-        if (allPosts.length > MAX_VISIBLE_POSTS) {
-            allPosts[allPosts.length - 1].remove();
+        const allRows = container.querySelectorAll(".chat-row");
+        if (allRows.length > MAX_VISIBLE_POSTS) {
+            allRows[allRows.length - 1].remove();
         }
+
+        applySearchFilter();
+    }
+
+    async function fetchJson(url, options = {}) {
+        const response = await fetch(url, options);
+        if (!response.ok) throw new Error("Request failed");
+        return response.json();
     }
 
     async function loadMessages() {
         if (window.isSubmittingPost) return;
 
         try {
-            const response = await fetch("/messages");
+            const posts = await fetchJson("/messages", {
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            });
 
-            if (!response.ok) {
-                return;
-            }
-
-            const posts = await response.json();
             renderPosts(posts);
         } catch (error) {
-            console.error("Failed to load messages");
+            console.error("Failed to load messages:", error);
         }
     }
 
     async function fetchLatestPosts() {
         try {
-            const response = await fetch("/messages");
-
-            if (!response.ok) {
-                return [];
-            }
-
-            return await response.json();
+            return await fetchJson("/messages", {
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            });
         } catch (error) {
             return [];
         }
     }
 
-    const ajaxPostForm = document.getElementById("post-form");
-    const textarea = document.getElementById("post-content");
-    const charCount = document.getElementById("char-count");
-    const submitBtn = document.getElementById("post-submit-btn");
+    function applySearchFilter() {
+        const searchInput = document.getElementById("user-search");
+        const noResults = document.getElementById("no-search-results");
+        const rows = document.querySelectorAll("#posts-container .chat-row");
+        const emptyState = document.querySelector("#posts-container .empty-state");
 
-    if (textarea && charCount) {
-        function updateCharCount() {
-            charCount.textContent = textarea.value.length;
+        if (!searchInput) return;
+
+        const term = searchInput.value.trim().toLowerCase();
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const user = row.dataset.user || "";
+            const content = row.dataset.content || "";
+            const matches = !term || user.includes(term) || content.includes(term);
+
+            row.classList.toggle("hidden-post", !matches);
+
+            if (matches) visibleCount++;
+        });
+
+        if (emptyState) {
+            emptyState.style.display = term ? "none" : "";
         }
 
-        textarea.addEventListener("input", updateCharCount);
-        updateCharCount();
+        if (noResults) {
+            noResults.style.display = (term && visibleCount === 0 && rows.length > 0) ? "block" : "none";
+        }
     }
 
-    loadMessages();
-    setInterval(loadMessages, 2000);
+    function hideUserSearchResults() {
+        const resultsBox = document.getElementById("user-search-results");
+        if (!resultsBox) return;
+        resultsBox.style.display = "none";
+        resultsBox.innerHTML = "";
+    }
 
-    if (ajaxPostForm) {
-        ajaxPostForm.addEventListener("submit", async function(e) {
-            e.preventDefault();
+    async function searchRealUsers(query) {
+        const resultsBox = document.getElementById("user-search-results");
+        if (!resultsBox) return;
 
-            window.isSubmittingPost = true;
+        const trimmedQuery = query.trim();
+
+        if (!trimmedQuery) {
+            hideUserSearchResults();
+            return;
+        }
+
+        try {
+            const users = await fetchJson(`/search_users?q=${encodeURIComponent(trimmedQuery)}`, {
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            });
+
+            if (!users.length) {
+                resultsBox.style.display = "block";
+                resultsBox.innerHTML = `<div class="user-result-empty">No users found.</div>`;
+                return;
+            }
+
+            resultsBox.style.display = "block";
+            resultsBox.innerHTML = users.map(user => `
+                <div class="user-result-item" data-username="${escapeAttribute(user.username)}" role="option">
+                    @${escapeHtml(user.username)}
+                </div>
+            `).join("");
+        } catch (error) {
+            hideUserSearchResults();
+        }
+    }
+
+    function filterPostsByUsername(username) {
+        const searchInput = document.getElementById("user-search");
+        if (!searchInput) return;
+
+        searchInput.value = username;
+        applySearchFilter();
+        hideUserSearchResults();
+    }
+
+    function initSearch() {
+        const searchInput = document.getElementById("user-search");
+        const searchResults = document.getElementById("user-search-results");
+
+        if (searchInput) {
+            searchInput.addEventListener("input", function() {
+                applySearchFilter();
+
+                clearTimeout(searchDebounce);
+                searchDebounce = setTimeout(() => {
+                    searchRealUsers(searchInput.value);
+                }, 250);
+            });
+
+            searchInput.addEventListener("focus", function() {
+                if (searchInput.value.trim()) {
+                    searchRealUsers(searchInput.value);
+                }
+            });
+
+            searchInput.addEventListener("keydown", function(event) {
+                if (event.key === "Escape") {
+                    hideUserSearchResults();
+                }
+            });
+        }
+
+        if (searchResults) {
+            searchResults.addEventListener("click", function(event) {
+                const item = event.target.closest(".user-result-item");
+                if (!item) return;
+
+                const username = item.dataset.username || "";
+                filterPostsByUsername(username);
+            });
+        }
+
+        document.addEventListener("click", function(event) {
+            const searchCard = document.querySelector(".search-bar-card");
+            if (!searchCard) return;
+
+            if (!searchCard.contains(event.target)) {
+                hideUserSearchResults();
+            }
+        });
+    }
+
+    function initComposer() {
+        const form = document.getElementById("post-form");
+        const textarea = document.getElementById("post-content");
+        const submitBtn = document.getElementById("post-submit-btn");
+
+        if (textarea) {
+            textarea.addEventListener("input", updateCharCount);
+            updateCharCount();
+        }
+
+        if (!form || !textarea || !submitBtn) return;
+
+        form.addEventListener("submit", async function(event) {
+            event.preventDefault();
 
             const content = textarea.value.trim();
 
             if (!content) {
-                window.isSubmittingPost = false;
-                alert("Post cannot be empty");
+                alert("Post cannot be empty.");
+                updateCharCount();
                 return;
             }
 
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.textContent = "Posting...";
-            }
+            window.isSubmittingPost = true;
+            updateCharCount();
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Posting...";
 
             try {
                 const response = await fetch("{{ url_for('feed') }}", {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/x-www-form-urlencoded"
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "X-Requested-With": "XMLHttpRequest"
                     },
                     body: "content=" + encodeURIComponent(content)
                 });
@@ -640,9 +1160,7 @@
                 }
 
                 textarea.value = "";
-                if (charCount) {
-                    charCount.textContent = "0";
-                }
+                updateCharCount();
 
                 const latestPosts = await fetchLatestPosts();
 
@@ -654,26 +1172,37 @@
                     } else {
                         renderPosts(latestPosts);
                     }
-                }
-
-                window.isSubmittingPost = false;
-
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = "Post";
+                } else {
+                    renderEmptyState();
                 }
             } catch (error) {
+                alert("Failed to post.");
+            } finally {
                 window.isSubmittingPost = false;
-
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = "Post";
-                }
-
-                alert("Failed to post");
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Post";
+                updateCharCount();
             }
         });
     }
-</script>
 
+    function initPolling() {
+        if (window.feedPollStarted) return;
+
+        window.feedPollStarted = true;
+        loadMessages();
+        pollTimer = setInterval(loadMessages, POLL_INTERVAL_MS);
+
+        document.addEventListener("visibilitychange", function() {
+            if (document.hidden) return;
+            loadMessages();
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        initSearch();
+        initComposer();
+        initPolling();
+    });
+</script>
 {% endblock %}
