@@ -34,13 +34,11 @@ from sqlalchemy.orm import joinedload, selectinload
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"))
+app.secret_key = "your_secret_key"
 
 import logging
 logging.basicConfig(level=logging.INFO)
 app.logger.setLevel(logging.INFO)
-
-app = Flask(__name__)
-app.secret_key = "your_secret_key"
 
 # ---------------- FIREBASE CONFIG ----------------
 # Attempt to initialize Firebase
@@ -389,45 +387,6 @@ def unauthorized():
 
 
 # ---------------- ROUTES ----------------
-# PRIVATE CHAT STORAGE (replace with DB)
-private_messages = []
-message_id = 1
-
-def get_private_messages(user1, user2):
-    return sorted([
-        m for m in private_messages
-        if (m["from"] == user1 and m["to"] == user2) or
-           (m["from"] == user2 and m["to"] == user1)
-    ], key=lambda x: x["id"])
-
-
-@app.route("/chat/private/<username>")
-def get_private_chat(username):
-    current_user = session.get("username")
-    msgs = get_private_messages(current_user, username)
-    return jsonify(msgs)
-
-
-@app.route("/chat/private/send/<username>", methods=["POST"])
-def send_private_chat(username):
-    global message_id
-    current_user = session.get("username")
-
-    content = request.form.get("content", "").strip()
-    if not content:
-        return jsonify({"success": False})
-
-    msg = {
-        "id": message_id,
-        "from": current_user,
-        "to": username,
-        "content": content
-    }
-    message_id += 1
-    private_messages.append(msg)
-
-    return jsonify({"success": True})
-
 @app.route("/private/<username>")
 @login_required
 def private_chat(username):

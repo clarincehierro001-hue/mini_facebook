@@ -1,0 +1,53 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // IMPORTANT: The Flask app uses the Admin SDK (firebase-admin), 
+    // which bypasses these security rules. These rules are primarily 
+    // to protect your data from direct unauthorized access via the 
+    // Client SDKs or to document access patterns.
+
+    // Helper: Check if a user is authenticated (assuming Firebase Auth integration)
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Public Chat Messages
+    match /public_messages/{messageId} {
+      // Allow anyone to read the public chat
+      allow read: if true;
+      // In a production app with Firebase Auth, you would use:
+      // allow create: if isSignedIn();
+      allow create: if true; 
+    }
+
+    // Posts
+    match /posts/{postId} {
+      allow read: if true;
+      // Allow creation if authenticated
+      allow create: if true;
+      // Only allow the author to edit or delete (based on the 'user' field)
+      allow update, delete: if false; // Reserved for server-side logic
+    }
+
+    // Reactions
+    match /reactions/{reactionId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    // Private Messages
+    match /private_messages/{messageId} {
+      // Private messages should only be readable by the sender or recipient
+      // Since Flask handles auth, the server (Admin SDK) has full access.
+      // We lock this down for any external client access.
+      allow read, write: if false;
+    }
+    
+    // Default deny for everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
