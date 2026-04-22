@@ -1,0 +1,26 @@
+<div id="chatboxOverlay" class="chatbox-overlay" onclick="closeChatbox()"></div>
+
+<aside id="chatboxPanel" class="chatbox-panel" aria-hidden="true">
+    <div class="chatbox-header">
+        <div>
+            <h2>Chatbox</h2>
+            <p>Live chat with other users</p>
+        </div>
+        <button type="button" class="chatbox-close" onclick="closeChatbox()" aria-label="Close chatbox">
+            &times;
+        </button>
+    </div>
+
+    <div id="chatMessages" class="chatbox-body"></div>
+
+    <form id="chatboxForm" class="chatbox-form">
+        <textarea
+            id="chatInput"
+            name="content"
+            placeholder="Type a message..."
+            maxlength="300"
+            required
+        ></textarea>
+        <button type="submit">Send</button>
+    </form>
+</aside>

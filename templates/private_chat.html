@@ -1,0 +1,54 @@
+<div id="chatboxPanel" class="chatbox-panel active">
+    <div class="chatbox-header">
+        <h2>Chat with {{ chat_user }}</h2>
+        <button type="button" class="chatbox-close" onclick="window.close()">×</button>
+    </div>
+
+    <div id="chatMessages" class="chatbox-body">
+        {% for msg in messages %}
+            <div class="chat-message {% if msg.from_user == current_user %}outgoing{% else %}incoming{% endif %}">
+                <div class="bubble">{{ msg.content }}</div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <form id="chatboxForm" class="chatbox-form">
+        <textarea id="chatInput" placeholder="Type a message..." maxlength="300"></textarea>
+        <button type="submit">Send</button>
+    </form>
+</div>
+
+<script>
+const currentUser = "{{ current_user }}";
+const chatUser = "{{ chat_user }}";
+const chatMessages = document.getElementById("chatMessages");
+const chatInput = document.getElementById("chatInput");
+const chatForm = document.getElementById("chatboxForm");
+
+async function fetchMessages() {
+    const res = await fetch(`/private/${chatUser}/messages`);
+    const data = await res.json();
+    chatMessages.innerHTML = data.map(msg => `
+        <div class="chat-message ${msg.from_user === currentUser ? "outgoing" : "incoming"}">
+            <div class="bubble">${msg.content}</div>
+        </div>
+    `).join("");
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+chatForm.addEventListener("submit", async e => {
+    e.preventDefault();
+    const content = chatInput.value.trim();
+    if (!content) return;
+    await fetch(`/private/${chatUser}/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ content })
+    });
+    chatInput.value = "";
+    await fetchMessages();
+});
+
+// Polling every 3 seconds
+setInterval(fetchMessages, 3000);
+</script>

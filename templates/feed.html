@@ -1,18 +1,1552 @@
 {% extends "base.html" %}
+
+{% block title %}Feed{% endblock %}
+
+{% block head %}
+<style>
+    .feed-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.25rem;
+    }
+
+    .feed-page-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 0;
+        font-size: 1.35rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+    }
+
+    .feed-page-title .divider {
+        color: var(--muted, #64748b);
+    }
+
+    .chatbox-trigger {
+        border: none;
+        background: transparent;
+        color: var(--primary, #2563eb);
+        font: inherit;
+        font-weight: 800;
+        cursor: pointer;
+        padding: 0;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .chatbox-trigger:hover {
+        opacity: 0.8;
+        transform: translateY(-1px);
+    }
+
+    .chatbox-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.35);
+        backdrop-filter: blur(2px);
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.25s ease;
+        z-index: 999;
+    }
+
+    .chatbox-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .chatbox-panel {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: min(420px, 100%);
+        height: 100vh;
+        background: #ffffff;
+        border-left: 1px solid #e2e8f0;
+        box-shadow: -18px 0 40px rgba(15, 23, 42, 0.12);
+        transform: translateX(100%);
+        transition: transform 0.28s ease;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chatbox-panel.active {
+        transform: translateX(0);
+    }
+
+    .chatbox-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1rem 0.9rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+
+    .chatbox-header h2 {
+        margin: 0;
+        font-size: 1.1rem;
+        color: #0f172a;
+    }
+
+    .chatbox-header p {
+        margin: 0.2rem 0 0;
+        font-size: 0.85rem;
+        color: #64748b;
+    }
+
+    .chatbox-close {
+        border: none;
+        background: transparent;
+        font-size: 1.8rem;
+        line-height: 1;
+        cursor: pointer;
+        color: #334155;
+        padding: 0;
+    }
+
+    .chatbox-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+        background: #f8fafc;
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+    }
+
+    .chat-message {
+        display: flex;
+    }
+
+    .chat-message.incoming {
+        justify-content: flex-start;
+    }
+
+    .chat-message.outgoing {
+        justify-content: flex-end;
+    }
+
+    .bubble {
+        max-width: 80%;
+        padding: 0.8rem 1rem;
+        border-radius: 1rem;
+        font-size: 0.95rem;
+        line-height: 1.45;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+        word-break: break-word;
+        white-space: pre-wrap;
+    }
+
+    .incoming .bubble {
+        background: #ffffff;
+        color: #0f172a;
+        border: 1px solid #e2e8f0;
+        border-bottom-left-radius: 0.35rem;
+    }
+
+    .outgoing .bubble {
+        background: #2563eb;
+        color: #ffffff;
+        border-bottom-right-radius: 0.35rem;
+    }
+
+    .chatbox-form {
+        display: flex;
+        gap: 0.75rem;
+        padding: 1rem;
+        border-top: 1px solid #e2e8f0;
+        background: #ffffff;
+    }
+
+    .chatbox-form textarea {
+        flex: 1;
+        min-height: 46px;
+        max-height: 120px;
+        border-radius: 0.9rem;
+        border: 1px solid #cbd5e1;
+        padding: 0.75rem 1rem;
+        outline: none;
+        font-size: 0.95rem;
+        font-family: inherit;
+        line-height: 1.4;
+        resize: none;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .chatbox-form textarea:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    .chatbox-form button {
+        height: 46px;
+        padding: 0 1.1rem;
+        border: none;
+        border-radius: 0.9rem;
+        background: #2563eb;
+        color: #ffffff;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+
+    .chatbox-form button:hover {
+        transform: translateY(-1px);
+        opacity: 0.92;
+    }
+
+    body.chatbox-open {
+        overflow: hidden;
+    }
+
+    @media (max-width: 640px) {
+        .chatbox-panel {
+            width: 100%;
+        }
+    }
+
+    .feed-shell {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 6px 0 18px;
+    }
+
+    .feed-wrapper {
+        max-width: 880px;
+        margin: 0 auto;
+    }
+
+    .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 16px;
+        margin-bottom: 22px;
+        flex-wrap: wrap;
+    }
+
+    .feed-title {
+        margin: 0 0 8px;
+        font-size: clamp(2rem, 4vw, 2.6rem);
+        line-height: 1.04;
+        font-weight: 900;
+        letter-spacing: -0.03em;
+        color: var(--text);
+    }
+
+    .feed-subtitle {
+        margin: 0;
+        max-width: 640px;
+        color: var(--text-muted);
+        font-size: 0.96rem;
+        line-height: 1.7;
+    }
+
+    .feed-subtitle strong {
+        color: var(--text);
+        font-weight: 800;
+    }
+
+    .feed-meta {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        color: var(--text-soft);
+        font-size: 0.82rem;
+        font-weight: 700;
+        box-shadow: var(--shadow-sm);
+        backdrop-filter: blur(12px);
+        white-space: nowrap;
+    }
+
+    .search-bar-card,
+    .post-form-card,
+    .empty-state,
+    .no-search-results {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        box-shadow: var(--shadow-md);
+        backdrop-filter: blur(14px);
+    }
+
+    .search-bar-card {
+        position: relative;
+        padding: 14px 16px;
+        margin-bottom: 18px;
+    }
+
+    .search-bar-wrap {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .search-icon {
+        flex-shrink: 0;
+        font-size: 1rem;
+        color: var(--text-muted);
+        opacity: 0.9;
+    }
+
+    .search-input {
+        width: 100%;
+        border: none;
+        outline: none;
+        background: transparent;
+        color: var(--text);
+        font-size: 0.95rem;
+        line-height: 1.4;
+        font-family: inherit;
+    }
+
+    .search-input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .user-search-results {
+        display: none;
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border);
+    }
+
+    .user-result-item,
+    .user-result-empty {
+        padding: 11px 12px;
+        border-radius: 12px;
+        font-size: 0.94rem;
+    }
+
+    .user-result-item {
+        cursor: pointer;
+        color: var(--text);
+        transition: background-color 0.2s ease, transform 0.16s ease;
+    }
+
+    .user-result-item:hover {
+        background: var(--primary-soft);
+        transform: translateX(2px);
+    }
+
+    .user-result-empty {
+        color: var(--text-muted);
+    }
+
+    .error-message {
+        margin-bottom: 18px;
+        padding: 13px 14px;
+        border-radius: 14px;
+        background: var(--error-bg);
+        color: var(--error-text);
+        border: 1px solid var(--error-border);
+        font-size: 0.95rem;
+        line-height: 1.55;
+    }
+
+    .post-form-card {
+        padding: 24px;
+        margin-bottom: 24px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .post-form-card::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 4px;
+        background: linear-gradient(90deg, #60a5fa, var(--primary), #93c5fd);
+    }
+
+    .composer-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+    }
+
+    .composer-title {
+        margin: 0 0 4px;
+        font-size: 1.18rem;
+        font-weight: 800;
+        color: var(--text);
+        letter-spacing: -0.02em;
+    }
+
+    .composer-hint {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        line-height: 1.6;
+    }
+
+    .post-form textarea {
+        width: 100%;
+        min-height: 128px;
+        padding: 15px 16px;
+        resize: vertical;
+        box-sizing: border-box;
+        border: 1px solid var(--border-strong);
+        border-radius: 16px;
+        background: var(--surface-solid);
+        color: var(--text);
+        font-size: 0.95rem;
+        line-height: 1.7;
+        font-family: inherit;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+        margin-bottom: 14px;
+    }
+
+    .post-form textarea::placeholder {
+        color: var(--text-muted);
+    }
+
+    .post-form textarea:hover {
+        border-color: #9ca3af;
+    }
+
+    .post-form textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.18);
+    }
+
+    .composer-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .composer-tools {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .char-counter {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.84rem;
+        color: var(--text-muted);
+        font-weight: 700;
+        background: var(--surface-muted);
+        border: 1px solid var(--border);
+        padding: 8px 12px;
+        border-radius: 999px;
+    }
+
+    .char-counter.limit-near {
+        color: #b45309;
+        border-color: rgba(180, 83, 9, 0.2);
+    }
+
+    .char-counter.limit-hit {
+        color: var(--error-text);
+        border-color: rgba(185, 28, 28, 0.2);
+    }
+
+    .post-submit-btn {
+        border: none;
+        border-radius: 14px;
+        padding: 11px 22px;
+        min-height: 46px;
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: white;
+        cursor: pointer;
+        background: linear-gradient(135deg, #60a5fa, var(--primary));
+        box-shadow: 0 12px 24px rgba(37, 99, 235, 0.24);
+        transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+    }
+
+    .post-submit-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 16px 28px rgba(37, 99, 235, 0.28);
+    }
+
+    .post-submit-btn:active {
+        transform: translateY(0);
+    }
+
+    .post-submit-btn:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+    }
+
+    .feed-stats {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+    }
+
+    .feed-stats-text {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        font-weight: 700;
+        letter-spacing: 0.01em;
+    }
+
+    #posts-container {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .chat-row {
+        display: flex;
+        width: 100%;
+    }
+
+    .chat-row.other-user {
+        justify-content: flex-start;
+    }
+
+    .chat-row.current-user {
+        justify-content: flex-end;
+    }
+
+    .post-card {
+        width: fit-content;
+        max-width: 78%;
+        padding: 14px 16px 12px;
+        border-radius: 22px;
+        position: relative;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-md);
+        word-break: break-word;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        overflow: hidden;
+    }
+
+    .post-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .chat-row.other-user .post-card {
+        background: var(--surface-solid);
+        color: var(--text);
+        border-top-left-radius: 8px;
+    }
+
+    .chat-row.current-user .post-card {
+        background: linear-gradient(135deg, rgba(239, 246, 255, 1), rgba(219, 234, 254, 1));
+        color: #0f172a;
+        border-color: #bfdbfe;
+        border-top-right-radius: 8px;
+    }
+
+    .post-card.new-post {
+        border-color: #93c5fd;
+        box-shadow:
+            0 0 0 3px rgba(147, 197, 253, 0.22),
+            0 16px 35px rgba(15, 23, 42, 0.08);
+        animation: fadeHighlight 1.4s ease;
+    }
+
+    @keyframes fadeHighlight {
+        0% {
+            transform: scale(0.985);
+            opacity: 0.88;
+        }
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    .post-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .post-author-wrap {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }
+
+    .post-avatar {
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+        color: #1d4ed8;
+        border: 1px solid rgba(37, 99, 235, 0.12);
+        font-weight: 800;
+        font-size: 0.9rem;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    }
+
+    .post-author {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: var(--text);
+        margin-bottom: 4px;
+        word-break: break-word;
+    }
+
+    .post-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 9px;
+        border-radius: 999px;
+        background: rgba(37, 99, 235, 0.1);
+        color: #1d4ed8;
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+    }
+
+    .post-content {
+        font-size: 0.95rem;
+        line-height: 1.75;
+        color: #334155;
+        margin-bottom: 12px;
+        white-space: pre-wrap;
+    }
+
+    .chat-row.current-user .post-content {
+        color: #1e293b;
+    }
+
+    .reactions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .reaction-btn {
+        border: 1px solid var(--border);
+        background: rgba(248, 250, 252, 0.9);
+        border-radius: 999px;
+        padding: 8px 12px;
+        cursor: pointer;
+        font-size: 0.83rem;
+        font-weight: 600;
+        color: #334155;
+        transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.16s ease;
+    }
+
+    .reaction-btn:hover {
+        background: var(--primary-soft);
+        border-color: #60a5fa;
+        color: #1d4ed8;
+        transform: translateY(-1px);
+    }
+
+    .reaction-btn.active {
+        background: #e8f1ff;
+        border-color: #60a5fa;
+        color: #1d4ed8;
+        font-weight: 800;
+    }
+
+    .empty-state {
+        padding: 40px 24px;
+        text-align: center;
+        color: var(--text-muted);
+    }
+
+    .empty-state-icon {
+        font-size: 2rem;
+        margin-bottom: 10px;
+    }
+
+    .empty-state-title {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: var(--text);
+        margin-bottom: 8px;
+        letter-spacing: -0.02em;
+    }
+
+    .empty-state-text {
+        font-size: 0.95rem;
+        line-height: 1.7;
+        max-width: 460px;
+        margin: 0 auto;
+    }
+
+    .hidden-post {
+        display: none !important;
+    }
+
+    .no-search-results {
+        display: none;
+        text-align: center;
+        padding: 18px;
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        margin-top: 14px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .chat-row.current-user .post-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.96), rgba(37, 99, 235, 0.18));
+            color: var(--text);
+            border-color: rgba(96, 165, 250, 0.24);
+        }
+
+        .post-avatar {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.24), rgba(147, 197, 253, 0.18));
+            color: #93c5fd;
+            border-color: rgba(147, 197, 253, 0.16);
+        }
+
+        .post-content,
+        .chat-row.current-user .post-content {
+            color: var(--text-soft);
+        }
+
+        .reaction-btn {
+            background: rgba(15, 23, 42, 0.78);
+            color: var(--text-soft);
+        }
+
+        .reaction-btn:hover,
+        .reaction-btn.active {
+            background: rgba(96, 165, 250, 0.12);
+        }
+    }
+
+    @media (max-width: 640px) {
+        .search-bar-card,
+        .post-form-card,
+        .empty-state,
+        .no-search-results {
+            border-radius: 18px;
+        }
+
+        .post-form-card {
+            padding: 18px;
+        }
+
+        .composer-footer {
+            align-items: stretch;
+        }
+
+        .composer-tools {
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .post-submit-btn {
+            width: 100%;
+        }
+
+        .post-card {
+            max-width: 94%;
+            padding: 13px 14px 12px;
+        }
+
+        .feed-meta {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .top-bar {
+            margin-bottom: 18px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 
-<p>Welcome, {{ user.username }}!</p>
-<a href="/logout">Logout</a>
+<div class="feed-topbar">
+    <h1 class="feed-page-title">
+        <span>FEED</span>
+        <span class="divider">/</span>
+        <button type="button" class="chatbox-trigger" onclick="openChatbox()">CHATBOX</button>
+    </h1>
+</div>
 
-<h3>Create Post</h3>
-<form method="POST">
-    <input name="content" placeholder="What's on your mind?" required>
-    <button type="submit">Post</button>
-</form>
+<div class="feed-shell">
+    <div class="feed-wrapper">
+        <div class="top-bar">
+            <div>
+                <h2 class="feed-title">Feed</h2>
+                <p class="feed-subtitle">
+                    Welcome, <strong>{{ current_user.username }}</strong>. Share updates, react to posts, and connect with other users.
+                </p>
+            </div>
 
-<h3>Feed</h3>
-{% for post in posts %}
-    <p>🧑 User {{ post.user_id }}: {{ post.content }}</p>
-{% endfor %}
+            <div class="feed-meta">
+                <span>✨ Live updates</span>
+            </div>
+        </div>
 
+        <div class="search-bar-card" aria-label="Search posts">
+            <div class="search-bar-wrap">
+                <div class="search-icon" aria-hidden="true">🔎</div>
+                <input
+                    type="text"
+                    id="user-search"
+                    class="search-input"
+                    placeholder="Search by username or message..."
+                    autocomplete="off"
+                    aria-label="Search by username or message"
+                >
+            </div>
+            <div id="user-search-results" class="user-search-results" role="listbox"></div>
+        </div>
+
+        {% if error %}
+            <div class="error-message" role="alert">{{ error }}</div>
+        {% endif %}
+
+        <div class="post-form-card">
+            <div class="composer-header">
+                <div>
+                    <h2 class="composer-title">Create a post</h2>
+                    <p class="composer-hint">Share a short message with everyone in the feed.</p>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ url_for('feed') }}" class="post-form" id="post-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <textarea
+                    id="post-content"
+                    name="content"
+                    maxlength="200"
+                    placeholder="Write your message here..."
+                    required
+                    aria-label="Post content"
+                ></textarea>
+
+                <div class="composer-footer">
+                    <div class="composer-tools">
+                        <div class="char-counter" id="char-counter">
+                            <span id="char-count">0</span>/200
+                        </div>
+                    </div>
+                    <button type="submit" id="post-submit-btn" class="post-submit-btn">Post</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="feed-stats">
+            <div class="feed-stats-text">Showing latest posts</div>
+        </div>
+
+        <div id="posts-container" aria-live="polite">
+            {% if posts %}
+                {% for post in posts %}
+                    <div
+                        class="chat-row {% if post.user == current_user.username %}current-user{% else %}other-user{% endif %}"
+                        data-user="{{ (post.user or '')|lower }}"
+                        data-content="{{ (post.content or '')|lower }}"
+                        data-post-id="{{ post.id }}"
+                    >
+                        <article class="post-card">
+                            <div class="post-header">
+                                <div class="post-author-wrap">
+                                    <div class="post-avatar">
+                                        {{ (post.user[:1] if post.user else "?")|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="post-author">@{{ post.user }}</div>
+                                        <span class="post-badge">
+                                            {% if post.user == current_user.username %}
+                                                You
+                                            {% else %}
+                                                User
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="post-content">{{ post.content }}</div>
+
+                            <div class="reactions">
+                                <button
+                                    type="button"
+                                    class="reaction-btn {% if post.current_user_reaction == 'like' %}active{% endif %}"
+                                    data-post-id="{{ post.id }}"
+                                    data-reaction="like"
+                                    onclick="reactToPost({{ post.id }}, 'like')"
+                                >
+                                    👍 Like (<span class="count-like">{{ post.reactions.get('like', 0) if post.reactions else 0 }}</span>)
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="reaction-btn {% if post.current_user_reaction == 'love' %}active{% endif %}"
+                                    data-post-id="{{ post.id }}"
+                                    data-reaction="love"
+                                    onclick="reactToPost({{ post.id }}, 'love')"
+                                >
+                                    ❤️ Love (<span class="count-love">{{ post.reactions.get('love', 0) if post.reactions else 0 }}</span>)
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="reaction-btn {% if post.current_user_reaction == 'laugh' %}active{% endif %}"
+                                    data-post-id="{{ post.id }}"
+                                    data-reaction="laugh"
+                                    onclick="reactToPost({{ post.id }}, 'laugh')"
+                                >
+                                    😂 Laugh (<span class="count-laugh">{{ post.reactions.get('laugh', 0) if post.reactions else 0 }}</span>)
+                                </button>
+                            </div>
+                        </article>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">💬</div>
+                    <div class="empty-state-title">No posts yet</div>
+                    <div class="empty-state-text">
+                        Be the first to post something and start the conversation.
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <div id="no-search-results" class="no-search-results">
+            No users or messages matched your search.
+        </div>
+    </div>
+</div>
+
+<script>
+    window.isSubmittingPost = false;
+    window.feedPollStarted = window.feedPollStarted || false;
+    window.chatPollStarted = window.chatPollStarted || false;
+
+    const MAX_VISIBLE_POSTS = 20;
+    const POLL_INTERVAL_MS = 3000;
+    const currentUser = "{{ current_user.username|e }}";
+    const csrfToken = "{{ csrf_token()|e }}";
+
+    let lastPostIds = new Set();
+    let pollTimer = null;
+    let chatPollTimer = null;
+
+    function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text || "";
+        return div.innerHTML;
+    }
+
+    function escapeAttribute(text) {
+        return String(text || "")
+            .replace(/&/g, "&amp;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+    }
+
+    function getAvatarLetter(username) {
+        if (!username || !username.trim()) return "?";
+        return username.trim().charAt(0).toUpperCase();
+    }
+
+    function isCurrentUserPost(username) {
+        return (username || "").trim().toLowerCase() === (currentUser || "").trim().toLowerCase();
+    }
+
+    function updateCharCount() {
+        const textarea = document.getElementById("post-content");
+        const charCount = document.getElementById("char-count");
+        const counterWrap = document.getElementById("char-counter");
+        const submitBtn = document.getElementById("post-submit-btn");
+
+        if (!textarea || !charCount || !counterWrap || !submitBtn) return;
+
+        const length = textarea.value.length;
+        charCount.textContent = length;
+
+        counterWrap.classList.remove("limit-near", "limit-hit");
+
+        if (length >= 200) {
+            counterWrap.classList.add("limit-hit");
+        } else if (length >= 160) {
+            counterWrap.classList.add("limit-near");
+        }
+
+        submitBtn.disabled = !textarea.value.trim() || window.isSubmittingPost;
+    }
+
+    function updateReactionButtons(postId, reactions, selectedReaction = null) {
+        const buttons = document.querySelectorAll(`.reaction-btn[data-post-id="${postId}"]`);
+
+        buttons.forEach(button => {
+            const reaction = button.dataset.reaction;
+            const countSpan = button.querySelector(`.count-${reaction}`);
+
+            if (countSpan && reactions && reactions[reaction] !== undefined) {
+                countSpan.textContent = reactions[reaction];
+            }
+
+            button.classList.toggle("active", !!selectedReaction && reaction === selectedReaction);
+        });
+    }
+
+    async function reactToPost(postId, reactionType) {
+        try {
+            const response = await fetch(`/react/${postId}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken,
+                    "X-Requested-With": "XMLHttpRequest"
+                },
+                body: JSON.stringify({
+                    reaction: reactionType,
+                    csrf_token: csrfToken
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                alert(data.error || "Failed to react.");
+                return;
+            }
+
+            let selectedReaction = null;
+            if (data.action === "added" || data.action === "updated") {
+                selectedReaction = reactionType;
+            }
+
+            if (data.reactions) {
+                updateReactionButtons(postId, data.reactions, selectedReaction);
+            }
+        } catch (error) {
+            alert("Something went wrong while reacting to the post.");
+        }
+    }
+
+    function createPostHtml(post, isNew = false) {
+        const mine = isCurrentUserPost(post.user);
+        const safeUsername = escapeHtml(post.user || "");
+        const safeContent = escapeHtml(post.content || "");
+        const selectedReaction = post.current_user_reaction || null;
+
+        return `
+            <div
+                class="chat-row ${mine ? "current-user" : "other-user"}"
+                data-user="${escapeAttribute((post.user || "").toLowerCase())}"
+                data-content="${escapeAttribute((post.content || "").toLowerCase())}"
+                data-post-id="${post.id}"
+            >
+                <article class="post-card ${isNew ? "new-post" : ""}">
+                    <div class="post-header">
+                        <div class="post-author-wrap">
+                            <div class="post-avatar">${getAvatarLetter(post.user)}</div>
+                            <div>
+                                <div class="post-author">@${safeUsername}</div>
+                                <span class="post-badge">${mine ? "You" : "User"}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="post-content">${safeContent}</div>
+
+                    <div class="reactions">
+                        <button
+                            type="button"
+                            class="reaction-btn ${selectedReaction === "like" ? "active" : ""}"
+                            data-post-id="${post.id}"
+                            data-reaction="like"
+                            onclick="reactToPost(${post.id}, 'like')"
+                        >
+                            👍 Like (<span class="count-like">${post.reactions?.like ?? 0}</span>)
+                        </button>
+
+                        <button
+                            type="button"
+                            class="reaction-btn ${selectedReaction === "love" ? "active" : ""}"
+                            data-post-id="${post.id}"
+                            data-reaction="love"
+                            onclick="reactToPost(${post.id}, 'love')"
+                        >
+                            ❤️ Love (<span class="count-love">${post.reactions?.love ?? 0}</span>)
+                        </button>
+
+                        <button
+                            type="button"
+                            class="reaction-btn ${selectedReaction === "laugh" ? "active" : ""}"
+                            data-post-id="${post.id}"
+                            data-reaction="laugh"
+                            onclick="reactToPost(${post.id}, 'laugh')"
+                        >
+                            😂 Laugh (<span class="count-laugh">${post.reactions?.laugh ?? 0}</span>)
+                        </button>
+                    </div>
+                </article>
+            </div>
+        `;
+    }
+
+    function renderEmptyState() {
+        const container = document.getElementById("posts-container");
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">💬</div>
+                <div class="empty-state-title">No posts yet</div>
+                <div class="empty-state-text">
+                    Be the first to post something and start the conversation.
+                </div>
+            </div>
+        `;
+    }
+
+    function renderPosts(posts) {
+        const container = document.getElementById("posts-container");
+        if (!container) return;
+
+        if (!posts || posts.length === 0) {
+            renderEmptyState();
+            lastPostIds = new Set();
+            applySearchFilter();
+            return;
+        }
+
+        const limitedPosts = posts.slice(0, MAX_VISIBLE_POSTS);
+        const newIds = new Set();
+
+        container.innerHTML = limitedPosts.map(post => {
+            newIds.add(post.id);
+            return createPostHtml(post, false);
+        }).join("");
+
+        lastPostIds = newIds;
+        applySearchFilter();
+    }
+
+    function prependPost(post) {
+        const container = document.getElementById("posts-container");
+        if (!container) return;
+
+        const emptyState = container.querySelector(".empty-state");
+        if (emptyState) {
+            container.innerHTML = "";
+        }
+
+        container.insertAdjacentHTML("afterbegin", createPostHtml(post, true));
+        lastPostIds.add(post.id);
+
+        const allRows = container.querySelectorAll(".chat-row");
+        if (allRows.length > MAX_VISIBLE_POSTS) {
+            allRows[allRows.length - 1].remove();
+        }
+
+        applySearchFilter();
+    }
+
+    async function fetchJson(url, options = {}) {
+        const response = await fetch(url, options);
+        if (!response.ok) throw new Error("Request failed");
+        return response.json();
+    }
+
+    async function loadMessages() {
+        if (window.isSubmittingPost) return;
+
+        try {
+            const posts = await fetchJson("/messages", {
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            });
+
+            renderPosts(posts);
+        } catch (error) {
+            console.error("Failed to load messages:", error);
+        }
+    }
+
+    async function fetchLatestPosts() {
+        try {
+            return await fetchJson("/messages", {
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            });
+        } catch (error) {
+            return [];
+        }
+    }
+
+    function applySearchFilter() {
+        const searchInput = document.getElementById("user-search");
+        const noResults = document.getElementById("no-search-results");
+        const rows = document.querySelectorAll("#posts-container .chat-row");
+        const emptyState = document.querySelector("#posts-container .empty-state");
+
+        if (!searchInput) return;
+
+        const term = searchInput.value.trim().toLowerCase();
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const user = row.dataset.user || "";
+            const content = row.dataset.content || "";
+            const matches = !term || user.includes(term) || content.includes(term);
+
+            row.classList.toggle("hidden-post", !matches);
+
+            if (matches) visibleCount++;
+        });
+
+        if (emptyState) {
+            emptyState.style.display = term ? "none" : "";
+        }
+
+        if (noResults) {
+            noResults.style.display = (term && visibleCount === 0 && rows.length > 0) ? "block" : "none";
+        }
+    }
+
+    function hideUserSearchResults() {
+        const resultsBox = document.getElementById("user-search-results");
+        if (!resultsBox) return;
+        resultsBox.style.display = "none";
+        resultsBox.innerHTML = "";
+    }
+
+    function searchUsersFromLoadedPosts(query) {
+        const resultsBox = document.getElementById("user-search-results");
+        if (!resultsBox) return;
+
+        const trimmedQuery = query.trim().toLowerCase();
+        if (!trimmedQuery) {
+            hideUserSearchResults();
+            return;
+        }
+
+        const rows = Array.from(document.querySelectorAll("#posts-container .chat-row"));
+        const uniqueUsernames = [...new Set(
+            rows
+                .map(row => row.dataset.user || "")
+                .filter(username => username && username.includes(trimmedQuery))
+        )].slice(0, 8);
+
+        if (!uniqueUsernames.length) {
+            resultsBox.style.display = "block";
+            resultsBox.innerHTML = `<div class="user-result-empty">No users found in loaded posts.</div>`;
+            return;
+        }
+
+        resultsBox.style.display = "block";
+        resultsBox.innerHTML = uniqueUsernames.map(username => `
+            <div class="user-result-item" data-username="${escapeAttribute(username)}" role="option">
+                @${escapeHtml(username)}
+            </div>
+        `).join("");
+    }
+
+    function filterPostsByUsername(username) {
+        const searchInput = document.getElementById("user-search");
+        if (!searchInput) return;
+
+        searchInput.value = username;
+        applySearchFilter();
+        hideUserSearchResults();
+    }
+
+    function initSearch() {
+        const searchInput = document.getElementById("user-search");
+        const searchResults = document.getElementById("user-search-results");
+
+        if (searchInput) {
+            searchInput.addEventListener("input", function() {
+                applySearchFilter();
+                searchUsersFromLoadedPosts(searchInput.value);
+            });
+
+            searchInput.addEventListener("focus", function() {
+                if (searchInput.value.trim()) {
+                    searchUsersFromLoadedPosts(searchInput.value);
+                }
+            });
+
+            searchInput.addEventListener("keydown", function(event) {
+                if (event.key === "Escape") {
+                    hideUserSearchResults();
+                }
+            });
+        }
+
+        if (searchResults) {
+            searchResults.addEventListener("click", function(event) {
+                const item = event.target.closest(".user-result-item");
+                if (!item) return;
+
+                const username = item.dataset.username || "";
+                filterPostsByUsername(username);
+            });
+        }
+
+        document.addEventListener("click", function(event) {
+            const searchCard = document.querySelector(".search-bar-card");
+            if (!searchCard) return;
+
+            if (!searchCard.contains(event.target)) {
+                hideUserSearchResults();
+            }
+        });
+    }
+
+    function initComposer() {
+        const form = document.getElementById("post-form");
+        const textarea = document.getElementById("post-content");
+        const submitBtn = document.getElementById("post-submit-btn");
+
+        if (textarea) {
+            textarea.addEventListener("input", updateCharCount);
+            updateCharCount();
+        }
+
+        if (!form || !textarea || !submitBtn) return;
+
+        form.addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const content = textarea.value.trim();
+
+            if (!content) {
+                alert("Post cannot be empty.");
+                updateCharCount();
+                return;
+            }
+
+            window.isSubmittingPost = true;
+            updateCharCount();
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Posting...";
+
+            try {
+                const body = new URLSearchParams({
+                    content: content,
+                    csrf_token: csrfToken
+                });
+
+                const response = await fetch("{{ url_for('feed') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                        "X-CSRFToken": csrfToken,
+                        "X-Requested-With": "XMLHttpRequest"
+                    },
+                    body: body.toString()
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to post");
+                }
+
+                textarea.value = "";
+                updateCharCount();
+
+                const latestPosts = await fetchLatestPosts();
+
+                if (latestPosts && latestPosts.length > 0) {
+                    const newestPost = latestPosts[0];
+
+                    if (!lastPostIds.has(newestPost.id)) {
+                        prependPost(newestPost);
+                    } else {
+                        renderPosts(latestPosts);
+                    }
+                } else {
+                    renderEmptyState();
+                }
+            } catch (error) {
+                alert("Failed to post.");
+            } finally {
+                window.isSubmittingPost = false;
+                submitBtn.textContent = "Post";
+                updateCharCount();
+            }
+        });
+    }
+
+    function initPolling() {
+        if (window.feedPollStarted) return;
+
+        window.feedPollStarted = true;
+        loadMessages();
+        pollTimer = setInterval(loadMessages, POLL_INTERVAL_MS);
+
+        document.addEventListener("visibilitychange", function() {
+            if (!document.hidden) {
+                loadMessages();
+            }
+        });
+    }
+
+    function renderChatMessages(messagesData) {
+        const messages = document.getElementById("chatMessages");
+        if (!messages) return;
+
+        messages.innerHTML = (messagesData || []).map(msg => {
+            const mine = isCurrentUserPost(msg.user);
+            return `
+                <div class="chat-message ${mine ? "outgoing" : "incoming"}">
+                    <div class="bubble">${escapeHtml(msg.content || "")}</div>
+                </div>
+            `;
+        }).join("");
+
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    async function loadChatMessages() {
+        try {
+            const data = await fetchJson("/chat/messages", {
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            });
+            renderChatMessages(data);
+        } catch (error) {
+            console.error("Failed to load chat messages:", error);
+        }
+    }
+
+    function initChatPolling() {
+        if (window.chatPollStarted) return;
+
+        window.chatPollStarted = true;
+        loadChatMessages();
+        chatPollTimer = setInterval(loadChatMessages, POLL_INTERVAL_MS);
+    }
+
+    function openChatbox() {
+        const panel = document.getElementById("chatboxPanel");
+        const overlay = document.getElementById("chatboxOverlay");
+
+        if (!panel || !overlay) return;
+
+        panel.classList.add("active");
+        overlay.classList.add("active");
+        document.body.classList.add("chatbox-open");
+        panel.setAttribute("aria-hidden", "false");
+
+        setTimeout(() => {
+            const input = document.getElementById("chatInput");
+            if (input) input.focus();
+        }, 200);
+
+        loadChatMessages();
+    }
+
+    function closeChatbox() {
+        const panel = document.getElementById("chatboxPanel");
+        const overlay = document.getElementById("chatboxOverlay");
+
+        if (!panel || !overlay) return;
+
+        panel.classList.remove("active");
+        overlay.classList.remove("active");
+        document.body.classList.remove("chatbox-open");
+        panel.setAttribute("aria-hidden", "true");
+    }
+
+    let isSendingChat = false; // ✅ add this ABOVE the function
+
+	async function sendChatMessage(event) {
+		event.preventDefault();
+
+		// 🚫 STOP if already sending
+		if (isSendingChat) return;
+		isSendingChat = true;
+
+		console.log("SEND TRIGGERED"); // 🧪 debug (you’ll use this later)
+
+		const input = document.getElementById("chatInput");
+		if (!input) {
+			isSendingChat = false;
+			return;
+		}
+
+		const message = input.value.trim();
+		if (!message) {
+			isSendingChat = false;
+			return;
+		}
+
+		try {
+			const body = new URLSearchParams({
+				content: message,
+				csrf_token: csrfToken
+			});
+
+			const response = await fetch("/chat/send", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+					"X-CSRFToken": csrfToken,
+					"X-Requested-With": "XMLHttpRequest"
+				},
+				body: body.toString()
+			});
+
+			if (!response.ok) throw new Error();
+
+			input.value = "";
+			await loadChatMessages();
+		} catch (error) {
+			alert("Failed to send chat message.");
+		} finally {
+			isSendingChat = false; // ✅ ALWAYS reset
+		}
+	}
+
+	if (!window.chatInitialized) {
+		window.chatInitialized = true;
+
+		initSearch();
+		initComposer();
+		initPolling();
+		initChatPolling();
+
+		const chatForm = document.getElementById("chatboxForm");
+
+		if (chatForm) {
+			chatForm.removeEventListener("submit", sendChatMessage); // 🧹 cleanup
+			chatForm.addEventListener("submit", sendChatMessage);
+		}
+	}
+		
+</script>
 {% endblock %}
