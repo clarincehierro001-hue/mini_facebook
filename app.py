@@ -3,8 +3,12 @@ import re
 import secrets
 from datetime import datetime, timedelta
 import traceback
-import firebase_admin
-from firebase_admin import credentials, firestore
+try:
+    import firebase_admin
+    from firebase_admin import credentials, firestore
+    HAS_FIREBASE = True
+except ImportError:
+    HAS_FIREBASE = False
 
 from flask import (
     Flask,
@@ -34,74 +38,11 @@ from sqlalchemy.orm import joinedload, selectinload
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"))
-app.secret_key = "your_secret_key"
 
+# ---------------- CONFIG ----------------
 import logging
 logging.basicConfig(level=logging.INFO)
 app.logger.setLevel(logging.INFO)
-
-# ---------------- FIREBASE CONFIG ----------------
-firebase_db = None
-try:
-    cred_path = os.path.join(BASE_DIR, "firebase-key.json")
-    if os.path.exists(cred_path):
-        cred = credentials.Certificate(cred_path)
-        firebase_admin.initialize_app(cred)
-        firebase_db = firestore.client()
-        app.logger.info("Firebase initialized with service account key.")
-    else:
-        try:
-            firebase_admin.initialize_app()
-            firebase_db = firestore.client()
-            app.logger.info("Firebase initialized with default credentials.")
-        except Exception:
-            app.logger.warning("Firebase not initialized: No credentials found.")
-except Exception as e:
-    app.logger.error(f"Error initializing Firebase: {e}")
-
-# Dummy in-memory storage (replace with a database)
-users = ["anelo", "aleon", "george"]
-private_messages = []  # List of dicts: {from_user, to_user, content, timestamp, id}
-
-message_id_counter = 1
-
-# ---------------- CONFIG ----------------
-def get_user_messages(user1, user2):
-    """Return messages between two users, sorted by timestamp."""
-    if firebase_db:
-        try:
-            msgs_ref = firebase_db.collection("private_messages")
-            # Fetch messages where from_user is user1 and to_user is user2
-            q1 = msgs_ref.where("from_user", "==", user1).where("to_user", "==", user2).stream()
-            # Fetch messages where from_user is user2 and to_user is user1
-            q2 = msgs_ref.where("from_user", "==", user2).where("to_user", "==", user1).stream()
-
-            msgs = []
-            for doc in q1:
-                data = doc.to_dict()
-                data['id'] = doc.id
-                msgs.append(data)
-            for doc in q2:
-                data = doc.to_dict()
-                data['id'] = doc.id
-                msgs.append(data)
-
-            return sorted(msgs, key=lambda x: x.get('timestamp', datetime.min))
-        except Exception as e:
-            app.logger.error(f"Firestore error fetching messages: {e}")
-
-    # Fallback to in-memory storage
-    msgs = [msg for msg in private_messages
-            if (msg['from_user'] == user1 and msg['to_user'] == user2)
-            or (msg['from_user'] == user2 and msg['to_user'] == user1)]
-    return sorted(msgs, key=lambda x: x['timestamp'])
-
-def get_database_uri():
-    db_url = os.environ.get("DATABASE_URL", "sqlite:///db.sqlite3")
-    if db_url.startswith("postgres://"):
-        db_url = db_url.replace("postgres://", "postgresql://", 1)
-    return db_url
-
 
 is_production = (
     os.environ.get("RENDER") is not None
@@ -110,9 +51,17 @@ is_production = (
 
 secret_key = os.environ.get("SECRET_KEY")
 if is_production and not secret_key:
-    raise RuntimeError("SECRET_KEY environment variable is required in production")
+    app.logger.warning("SECRET_KEY environment variable is missing in production environment!")
 
 app.config["SECRET_KEY"] = secret_key or "dev-secret-key-change-this-in-production"
+app.secret_key = app.config["SECRET_KEY"]
+
+def get_database_uri():
+    db_url = os.environ.get("DATABASE_URL", "sqlite:///db.sqlite3")
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    return db_url
+
 app.config["SQLALCHEMY_DATABASE_URI"] = get_database_uri()
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024  # 1 MB request cap
@@ -136,6 +85,32 @@ login_manager.init_app(app)
 REACTION_TYPES = ("like", "love", "laugh")
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS", "TRACE"}
 
+# ---------------- FIREBASE CONFIG ----------------
+firebase_db = None
+if HAS_FIREBASE:
+    try:
+        cred_path = os.path.join(BASE_DIR, "firebase-key.json")
+        if os.path.exists(cred_path):
+            cred = credentials.Certificate(cred_path)
+            firebase_admin.initialize_app(cred)
+            firebase_db = firestore.client()
+            app.logger.info("Firebase initialized with service account key.")
+        else:
+            try:
+                firebase_admin.initialize_app()
+                firebase_db = firestore.client()
+                app.logger.info("Firebase initialized with default credentials.")
+            except Exception:
+                app.logger.warning("Firebase not initialized: No credentials found.")
+    except Exception as e:
+        app.logger.error(f"Error initializing Firebase: {e}")
+else:
+    app.logger.warning("Firebase not initialized: Module 'firebase-admin' not found.")
+
+# Dummy in-memory storage (replace with a database)
+users = ["anelo", "aleon", "george"]
+private_messages = []  # List of dicts: {from_user, to_user, content, timestamp, id}
+message_id_counter = 1
 
 # ---------------- MODELS ----------------
 class User(UserMixin, db.Model):
@@ -198,6 +173,36 @@ class ChatMessage(db.Model):
 
 
 # ---------------- HELPERS ----------------
+def get_user_messages(user1, user2):
+    """Return messages between two users, sorted by timestamp."""
+    if firebase_db:
+        try:
+            msgs_ref = firebase_db.collection("private_messages")
+            # Fetch messages where from_user is user1 and to_user is user2
+            q1 = msgs_ref.where("from_user", "==", user1).where("to_user", "==", user2).stream()
+            # Fetch messages where from_user is user2 and to_user is user1
+            q2 = msgs_ref.where("from_user", "==", user2).where("to_user", "==", user1).stream()
+
+            msgs = []
+            for doc in q1:
+                data = doc.to_dict()
+                data['id'] = doc.id
+                msgs.append(data)
+            for doc in q2:
+                data = doc.to_dict()
+                data['id'] = doc.id
+                msgs.append(data)
+
+            return sorted(msgs, key=lambda x: x.get('timestamp', datetime.min))
+        except Exception as e:
+            app.logger.error(f"Firestore error fetching messages: {e}")
+
+    # Fallback to in-memory storage
+    msgs = [msg for msg in private_messages
+            if (msg['from_user'] == user1 and msg['to_user'] == user2)
+            or (msg['from_user'] == user2 and msg['to_user'] == user1)]
+    return sorted(msgs, key=lambda x: x['timestamp'])
+
 def normalize_username(username):
     return (username or "").strip().lower()
 
@@ -814,7 +819,8 @@ def request_too_large(error):
 
 
 # ---------------- RUN ----------------
+with app.app_context():
+    db.create_all()
+
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
     app.run(debug=not is_production, port=5000)
