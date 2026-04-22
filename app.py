@@ -41,25 +41,21 @@ logging.basicConfig(level=logging.INFO)
 app.logger.setLevel(logging.INFO)
 
 # ---------------- FIREBASE CONFIG ----------------
-# Attempt to initialize Firebase
 firebase_db = None
 try:
-    # Path to your service account key file
     cred_path = os.path.join(BASE_DIR, "firebase-key.json")
     if os.path.exists(cred_path):
         cred = credentials.Certificate(cred_path)
         firebase_admin.initialize_app(cred)
         firebase_db = firestore.client()
-        app.logger.info("Firebase initialized successfully with service account key.")
+        app.logger.info("Firebase initialized with service account key.")
     else:
-        # Fallback to default credentials (useful for environments like Google Cloud)
-        # or if environment variables are set.
         try:
             firebase_admin.initialize_app()
             firebase_db = firestore.client()
             app.logger.info("Firebase initialized with default credentials.")
         except Exception:
-            app.logger.warning("Firebase not initialized: firebase-key.json not found and no default credentials.")
+            app.logger.warning("Firebase not initialized: No credentials found.")
 except Exception as e:
     app.logger.error(f"Error initializing Firebase: {e}")
 
