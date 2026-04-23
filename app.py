@@ -60,6 +60,10 @@ def get_database_uri():
     db_url = os.environ.get("DATABASE_URL", "sqlite:///db.sqlite3")
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
+    
+    if is_production and db_url.startswith("sqlite"):
+        app.logger.warning("Using SQLite in production! Data will be lost on server restart. Use a persistent DATABASE_URL.")
+    
     return db_url
 
 app.config["SQLALCHEMY_DATABASE_URI"] = get_database_uri()
@@ -448,6 +452,59 @@ def firebase_status():
         return jsonify({"status": "disconnected", "message": "Firebase is not initialized. Please provide firebase-key.json."}), 500
 
 
+@app.route("/sync-db-to-firestore", methods=["POST"])
+@login_required
+def sync_db_to_firestore():
+    if not firebase_db:
+        return jsonify({"success": False, "error": "Firebase not connected"}), 500
+
+    try:
+        synced = {"users": 0, "posts": 0, "reactions": 0, "chat_messages": 0}
+
+        for user in User.query.all():
+            firebase_db.collection("users").document(str(user.id)).set({
+                "id": user.id,
+                "username": user.username,
+                "password_hash": user.password_hash
+            })
+            synced["users"] += 1
+
+        for post in Post.query.all():
+            firebase_db.collection("posts").document(str(post.id)).set({
+                "id": post.id,
+                "content": post.content,
+                "created_at": post.created_at.isoformat(),
+                "user_id": post.user_id,
+                "username": post.user.username
+            })
+            synced["posts"] += 1
+
+        for reaction in Reaction.query.all():
+            firebase_db.collection("reactions").document(str(reaction.id)).set({
+                "id": reaction.id,
+                "reaction_type": reaction.reaction_type,
+                "user_id": reaction.user_id,
+                "post_id": reaction.post_id
+            })
+            synced["reactions"] += 1
+
+        for msg in ChatMessage.query.all():
+            firebase_db.collection("chat_messages").document(str(msg.id)).set({
+                "id": msg.id,
+                "content": msg.content,
+                "created_at": msg.created_at.isoformat(),
+                "user_id": msg.user_id,
+                "username": msg.user.username
+            })
+            synced["chat_messages"] += 1
+
+        app.logger.info(f"Synced to Firestore: {synced}")
+        return jsonify({"success": True, "synced": synced})
+    except Exception as e:
+        app.logger.error(f"Sync error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @app.route("/")
 def home():
     if current_user.is_authenticated:
@@ -488,6 +545,18 @@ def register():
         try:
             db.session.add(user)
             db.session.commit()
+            
+            # Sync to Firestore if available for persistence
+            if firebase_db:
+                try:
+                    firebase_db.collection("users").document(str(user.id)).set({
+                        "id": user.id,
+                        "username": user.username,
+                        "password_hash": user.password_hash
+                    })
+                    app.logger.info(f"User {username} synced to Firestore.")
+                except Exception as e:
+                    app.logger.error(f"Firestore error syncing new user: {e}")
         except IntegrityError:
             db.session.rollback()
             return render_template(
@@ -516,8 +585,34 @@ def login():
 
             user = User.query.filter_by(username=username).first()
 
+            # If not in local DB, check Firestore for persistence recovery
+            if not user and firebase_db:
+                try:
+                    # Query Firestore for this username
+                    query = firebase_db.collection("users").where("username", "==", username).limit(1).stream()
+                    fb_user_doc = None
+                    for doc in query:
+                        fb_user_doc = doc.to_dict()
+                        break
+                    
+                    if fb_user_doc:
+                        # Found in Firestore, recreate in local DB
+                        # Note: we use original password_hash to maintain the same credentials
+                        user = User(username=fb_user_doc['username'], password_hash=fb_user_doc['password_hash'])
+                        db.session.add(user)
+                        db.session.commit()
+                        app.logger.info(f"Recreated user {username} from Firestore recovery.")
+                except Exception as e:
+                    app.logger.error(f"Firestore recovery error: {e}")
+                    db.session.rollback()
+
             if user and user.check_password(password):
                 remember = request.form.get("remember") == "on"
+                
+                # Make session permanent if "Remember me" is checked
+                if remember:
+                    session.permanent = True
+                    
                 login_user(user, remember=remember)
                 flash("Logged in successfully.", "success")
                 return redirect(url_for("feed"))
